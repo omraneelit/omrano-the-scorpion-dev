@@ -31,6 +31,7 @@
       <nav aria-label="Main navigation">
         <ul class="nav-links">
           <li><a href="#about">About</a></li>
+          <li><a href="#arcade">Arcade</a></li>
           <li><a href="#games">Games</a></li>
           <li><a href="#apps">Apps</a></li>
           <li><a href="privacy.html">Privacy Policy</a></li>
@@ -59,6 +60,45 @@
         <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
         <div class="pixel-card pixel-a">+</div><div class="pixel-card pixel-b">01</div><div class="pixel-card pixel-c">✦</div>
         <div class="hero-orb"><span>PLAY<br>CREATE<br>REPEAT</span></div>
+      </div>
+    </section>
+
+    <section id="arcade" class="arcade-section">
+      <div class="container">
+        <div class="arcade-heading">
+          <div>
+            <p class="eyebrow">QUICK PLAY // BROWSER ARCADE</p>
+            <h2>Scorpion Strike</h2>
+          </div>
+          <p>Defend the signal from waves of void bugs. Move fast, fire faster, and keep the scorpion alive.</p>
+        </div>
+        <div class="arcade-shell">
+          <div class="arcade-topbar">
+            <span><i></i> SYSTEM ONLINE</span>
+            <div class="arcade-stats" aria-live="polite">
+              <span>SCORE <strong id="game-score">000000</strong></span>
+              <span>WAVE <strong id="game-wave">01</strong></span>
+              <span>LIVES <strong id="game-lives">◆◆◆</strong></span>
+              <span>BEST <strong id="game-best">000000</strong></span>
+            </div>
+          </div>
+          <div class="game-stage" id="game-stage">
+            <canvas id="scorpion-game" width="960" height="540" aria-label="Scorpion Strike arcade game. Move with arrow keys or A and D, and fire with Space. On touch screens, drag to move and auto-fire."></canvas>
+            <div class="game-overlay" id="game-overlay">
+              <p class="game-kicker">OMRANO ARCADE // 01</p>
+              <h3 id="game-overlay-title">SCORPION STRIKE</h3>
+              <p id="game-overlay-copy">Clear the swarm. Protect the signal.<br>Three lives. No retreat.</p>
+              <button class="game-start" id="game-start" type="button">START MISSION <span>→</span></button>
+            </div>
+            <div class="game-flash" id="game-flash" aria-hidden="true"></div>
+          </div>
+          <div class="arcade-controls">
+            <p><kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> MOVE</p>
+            <p><kbd>SPACE</kbd> FIRE</p>
+            <p class="touch-hint">TOUCH + DRAG TO MOVE &amp; FIRE</p>
+            <button id="game-sound" class="sound-toggle" type="button" aria-pressed="false">SOUND: OFF</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -102,6 +142,7 @@
   </main>
 
   <footer class="site-footer"><div class="container footer-grid"><a class="brand" href="#top"><span class="brand-mark">&lt;/&gt;</span> Omrano The Scorpion Dev</a><div><a href="#games">Games</a><a href="#apps">Apps</a><a href="#about">About</a><a href="privacy.html">Privacy</a></div><p>© 2026 Omrano The Scorpion Dev. Made independently.<br><a href="mailto:omraneelitdev@gmail.com">omraneelitdev@gmail.com</a></p></div></footer>
+  <script src="game.js"></script>
   <script data-goatcounter="https://omrane-elit.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
