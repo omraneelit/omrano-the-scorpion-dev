@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://omraneelit.github.io/omrano-the-scorpion-dev/sitemap.xml
