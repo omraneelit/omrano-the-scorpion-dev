@@ -92,6 +92,7 @@
     cancelAnimationFrame(animationId);
     animationId = requestAnimationFrame(loop);
     tone(180, 0.12, 0.04, "sawtooth");
+    canvas.focus({ preventScroll: true });
   }
 
   function endGame() {
@@ -377,13 +378,22 @@
     soundButton.setAttribute("aria-pressed", String(soundOn));
     if (soundOn) tone(440, 0.08, 0.025, "triangle");
   });
-  window.addEventListener("keydown", event => {
-    if (["ArrowLeft", "ArrowRight", "Space", "KeyA", "KeyD"].includes(event.code) && playing) event.preventDefault();
+  canvas.addEventListener("keydown", event => {
+    if (!["ArrowLeft", "ArrowRight", "Space", "KeyA", "KeyD"].includes(event.code) || !playing) return;
+    event.preventDefault();
     keys[event.code] = true;
   });
   window.addEventListener("keyup", event => { keys[event.code] = false; });
+  canvas.addEventListener("blur", () => {
+    keys.ArrowLeft = false;
+    keys.ArrowRight = false;
+    keys.KeyA = false;
+    keys.KeyD = false;
+    keys.Space = false;
+  });
   stage.addEventListener("pointerdown", event => {
     if (!playing || event.target.closest("button")) return;
+    canvas.focus({ preventScroll: true });
     pointerActive = true;
     stage.setPointerCapture?.(event.pointerId);
     pointerMove(event);
