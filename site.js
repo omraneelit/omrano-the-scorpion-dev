@@ -1,8 +1,6 @@
 (() => {
   "use strict";
 
-  document.documentElement.classList.add("js");
-
   if (location.pathname.includes("/games/") && !document.querySelector('script[type="application/ld+json"]')) {
     const title = document.querySelector("h1")?.textContent.replace(/\s+/g, " ").trim();
     const description = document.querySelector('meta[name="description"]')?.content;
@@ -61,4 +59,15 @@
   desktop.addEventListener?.("change", event => {
     if (event.matches) closeMenu();
   });
+
+  const sectionIds = ["announcements", "games", "arcade", "tools", "about", "contact"];
+  const navMap = new Map(
+    sectionIds.map(id => [id, document.querySelector(`.nav-links a[href="#${id}"]`)])
+  );
+  const setActive = id => navMap.forEach((a, k) => a?.setAttribute("aria-current", k === id ? "true" : "false"));
+  const spy = new IntersectionObserver(
+    entries => entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); }),
+    { rootMargin: "-25% 0px -65% 0px" }
+  );
+  sectionIds.forEach(id => { const el = document.getElementById(id); if (el) spy.observe(el); });
 })();

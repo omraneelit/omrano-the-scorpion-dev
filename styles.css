@@ -33,6 +33,7 @@ button { font:inherit; }
 .nav-links { list-style:none; margin:0; padding:0; display:flex; align-items:center; gap:20px; font-size:.82rem; font-weight:700; }
 .nav-links a { min-height:44px; display:flex; align-items:center; color:var(--muted); transition:color .2s,background .2s; }
 .nav-links a:hover { color:var(--accent); }
+.nav-links a[aria-current="true"]:not(.nav-contact) { color:var(--accent); }
 .nav-links .nav-contact { min-height:auto; padding:9px 15px; border-radius:7px; background:var(--accent); color:var(--bg); }
 .nav-links .nav-contact:hover { background:#70f0c5; color:var(--bg); }
 
@@ -93,6 +94,8 @@ button { font:inherit; }
 .project-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
 .project-card { position:relative; overflow:hidden; border:1px solid var(--line); border-radius:12px; background:var(--surface); transition:transform .25s,border-color .25s,box-shadow .25s; }
 .project-card:hover { transform:translateY(-6px); border-color:rgba(54,224,165,.5); box-shadow:0 20px 30px rgba(0,0,0,.18); }
+.project-card-coming { cursor:default; }
+.project-card-coming:hover { transform:none; border-color:var(--line); box-shadow:none; }
 .project-card:focus-within { border-color:var(--accent); }
 .project-card-link { position:absolute; inset:0; z-index:2; }
 .project-visual { height:195px; position:relative; overflow:hidden; display:grid; place-items:center; padding:19px; }
