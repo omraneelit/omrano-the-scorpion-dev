@@ -111,6 +111,9 @@ button { font:inherit; }
 .visual-turf { padding:0; background:#17191f; }
 .visual-lineburst { background:linear-gradient(135deg,#662a88,#243d93); }
 .visual-root { background:radial-gradient(circle at 50% 38%,#547d7a 0,#224f49 41%,#102e2c 100%); }
+.visual-signal { background:radial-gradient(circle at 50% 38%,#2a6f9e 0,#123b63 44%,#08172b 100%); }
+.visual-ledger { background:radial-gradient(circle at 50% 38%,#a67a3c 0,#5c3f1c 45%,#241608 100%); }
+.game-emblem { font:600 3.4rem var(--mono); letter-spacing:.04em; color:rgba(255,255,255,.9); text-shadow:0 6px 22px rgba(0,0,0,.45); user-select:none; }
 .game-art { max-width:100%; max-height:100%; display:block; position:relative; z-index:1; }
 .game-art-wide { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 10px 12px rgba(0,0,0,.35)); }
 .game-art-zero { width:116%; max-width:none; }
