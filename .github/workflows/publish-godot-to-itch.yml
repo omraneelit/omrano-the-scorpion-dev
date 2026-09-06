@@ -1,0 +1,120 @@
+name: Reusable Godot itch.io release
+
+on:
+  workflow_call:
+    inputs:
+      game_id:
+        description: Website game page filename without .html
+        required: true
+        type: string
+      itch_target:
+        description: itch.io target in user/game format
+        required: true
+        type: string
+      godot_version:
+        description: Godot version without the -stable suffix
+        required: true
+        type: string
+      builds:
+        description: JSON array containing preset, path, source, and channel for each build
+        required: true
+        type: string
+      website_repository:
+        description: Repository that owns the update registry
+        required: false
+        default: omraneelit/omrano-the-scorpion-dev
+        type: string
+    secrets:
+      BUTLER_API_KEY:
+        required: true
+      WEBSITE_DISPATCH_TOKEN:
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build: ${{ fromJSON(inputs.builds) }}
+    env:
+      GODOT_VERSION: ${{ inputs.godot_version }}
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot and export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          release="${GODOT_VERSION}-stable"
+          base="https://github.com/godotengine/godot/releases/download/${release}"
+          curl -L --fail --retry 3 -o godot.zip "${base}/Godot_v${release}_linux.x86_64.zip"
+          curl -L --fail --retry 3 -o templates.tpz "${base}/Godot_v${release}_export_templates.tpz"
+          unzip -q godot.zip -d "$RUNNER_TEMP/godot"
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          unzip -q templates.tpz -d "$RUNNER_TEMP/templates"
+          mv "$RUNNER_TEMP/templates/templates/"* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+          godot_binary="$RUNNER_TEMP/godot/Godot_v${release}_linux.x86_64"
+          chmod +x "$godot_binary"
+          ln -s "$godot_binary" "$RUNNER_TEMP/godot/godot"
+          echo "$RUNNER_TEMP/godot" >> "$GITHUB_PATH"
+
+      - name: Import project
+        run: godot --headless --path . --import
+
+      - name: Export ${{ matrix.build.preset }}
+        shell: bash
+        env:
+          EXPORT_PRESET: ${{ matrix.build.preset }}
+          EXPORT_PATH: ${{ matrix.build.path }}
+        run: |
+          mkdir -p "$(dirname "$EXPORT_PATH")"
+          godot --headless --path . --export-release "$EXPORT_PRESET" "$EXPORT_PATH"
+
+      - name: Install Butler
+        shell: bash
+        run: |
+          curl -L --fail --retry 3 -o butler.zip \
+            https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip -q butler.zip -d "$RUNNER_TEMP/butler"
+          chmod +x "$RUNNER_TEMP/butler/butler"
+          echo "$RUNNER_TEMP/butler" >> "$GITHUB_PATH"
+
+      - name: Publish ${{ matrix.build.channel }} to itch.io
+        shell: bash
+        env:
+          BUILD_SOURCE: ${{ matrix.build.source }}
+          ITCH_CHANNEL: ${{ matrix.build.channel }}
+          ITCH_TARGET: ${{ inputs.itch_target }}
+        run: butler push "$BUILD_SOURCE" "${ITCH_TARGET}:${ITCH_CHANNEL}" --userversion "${GITHUB_REF_NAME}"
+
+  notify-website:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record successful release on website
+        uses: actions/github-script@v7
+        env:
+          WEBSITE_REPOSITORY: ${{ inputs.website_repository }}
+          GAME_ID: ${{ inputs.game_id }}
+          RELEASE_VERSION: ${{ github.ref_name }}
+        with:
+          github-token: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
+          script: |
+            const [owner, repo] = process.env.WEBSITE_REPOSITORY.split("/");
+            if (!owner || !repo) {
+              core.setFailed("website_repository must use owner/repository format");
+              return;
+            }
+            await github.rest.repos.createDispatchEvent({
+              owner,
+              repo,
+              event_type: "game-published",
+              client_payload: {
+                game_id: process.env.GAME_ID,
+                version: process.env.RELEASE_VERSION,
+                published_at: new Date().toISOString(),
+                repository: context.repo.owner + "/" + context.repo.repo
+              }
+            });

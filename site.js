@@ -3,6 +3,70 @@
 
   document.documentElement.classList.add("js");
 
+  const UPDATE_BADGE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+  function gameIdFromHref(href) {
+    if (!href) return null;
+    const filename = new URL(href, window.location.href).pathname.split("/").pop();
+    return filename?.replace(/\.html$/, "") || null;
+  }
+
+  function addUpdateBadge(container, updatedAt) {
+    if (!container || container.querySelector(".game-update-badge")) return;
+
+    const badge = document.createElement("span");
+    const dateLabel = new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    }).format(new Date(updatedAt));
+
+    badge.className = "game-update-badge";
+    badge.textContent = "NEW UPDATE";
+    badge.setAttribute("aria-label", `New update published ${dateLabel}`);
+    badge.title = `Updated ${dateLabel}`;
+    container.append(badge);
+  }
+
+  async function showRecentGameUpdates() {
+    const registryUrl = location.pathname.includes("/games/")
+      ? "../data/game-updates.json"
+      : "data/game-updates.json";
+
+    try {
+      const response = await fetch(registryUrl, { cache: "no-store" });
+      if (!response.ok) throw new Error(`Update registry returned ${response.status}`);
+
+      const registry = await response.json();
+      const now = Date.now();
+      const isRecent = updatedAt => {
+        const timestamp = Date.parse(updatedAt);
+        const age = now - timestamp;
+        return Number.isFinite(timestamp) && age >= 0 && age < UPDATE_BADGE_WINDOW_MS;
+      };
+
+      document.querySelectorAll(".game-card").forEach(card => {
+        const id = gameIdFromHref(card.querySelector(".project-card-link")?.getAttribute("href"));
+        const updatedAt = id && registry.games?.[id]?.last_updated;
+        if (updatedAt && isRecent(updatedAt)) {
+          addUpdateBadge(card.querySelector(".project-visual"), updatedAt);
+        }
+      });
+
+      if (location.pathname.includes("/games/")) {
+        const id = gameIdFromHref(location.pathname);
+        const updatedAt = id && registry.games?.[id]?.last_updated;
+        if (updatedAt && isRecent(updatedAt)) {
+          addUpdateBadge(document.querySelector(".game-detail-art"), updatedAt);
+        }
+      }
+    } catch (error) {
+      console.warn("Game update badges are unavailable.", error);
+    }
+  }
+
+  showRecentGameUpdates();
+
   if (location.pathname.includes("/games/") && !document.querySelector('script[type="application/ld+json"]')) {
     const title = document.querySelector("h1")?.textContent.replace(/\s+/g, " ").trim();
     const description = document.querySelector('meta[name="description"]')?.content;

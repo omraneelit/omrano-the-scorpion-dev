@@ -1,0 +1,84 @@
+name: Record published game update
+
+on:
+  repository_dispatch:
+    types: [game-published]
+  workflow_dispatch:
+    inputs:
+      game_id:
+        description: Game page filename without .html
+        required: true
+        type: string
+      version:
+        description: Published version (for example, v1.2.0)
+        required: false
+        type: string
+      published_at:
+        description: Optional ISO 8601 timestamp; current UTC time is used when empty
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: game-update-registry
+  cancel-in-progress: false
+
+jobs:
+  update-registry:
+    runs-on: ubuntu-latest
+    env:
+      GAME_ID: ${{ github.event.client_payload.game_id || inputs.game_id }}
+      GAME_VERSION: ${{ github.event.client_payload.version || inputs.version }}
+      PUBLISHED_AT: ${{ github.event.client_payload.published_at || inputs.published_at }}
+      SOURCE_REPOSITORY: ${{ github.event.client_payload.repository || github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Validate event and update registry
+        uses: actions/github-script@v7
+        env:
+          REGISTRY_PATH: data/game-updates.json
+        with:
+          script: |
+            const fs = require("fs");
+            const gameId = process.env.GAME_ID?.trim();
+            const version = process.env.GAME_VERSION?.trim() || null;
+            const suppliedDate = process.env.PUBLISHED_AT?.trim();
+
+            if (!gameId || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(gameId)) {
+              core.setFailed("game_id must be a lowercase kebab-case identifier");
+              return;
+            }
+
+            const publishedAt = suppliedDate || new Date().toISOString();
+            if (!Number.isFinite(Date.parse(publishedAt))) {
+              core.setFailed("published_at must be a valid ISO 8601 timestamp");
+              return;
+            }
+
+            const path = process.env.REGISTRY_PATH;
+            const registry = JSON.parse(fs.readFileSync(path, "utf8"));
+            registry.games ||= {};
+            registry.games[gameId] = {
+              last_updated: new Date(publishedAt).toISOString(),
+              version,
+              source_repository: process.env.SOURCE_REPOSITORY
+            };
+            fs.writeFileSync(path, `${JSON.stringify(registry, null, 2)}\n`);
+
+      - name: Commit registry update
+        shell: bash
+        run: |
+          if git diff --quiet -- data/game-updates.json; then
+            echo "Registry already contains this update."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/game-updates.json
+          git commit -m "Record ${GAME_ID} ${GAME_VERSION:-update}"
+          git push origin "HEAD:${{ github.event.repository.default_branch }}"
