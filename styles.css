@@ -213,6 +213,12 @@ button { font:inherit; }
 .game-summary p { margin:0; color:var(--muted); }
 .game-summary ul { margin:17px 0 0; padding-left:18px; color:#c7d4e4; font-size:.9rem; }
 .game-summary li + li { margin-top:7px; }
+.game-detail-art.art-cowdude { min-height:0; aspect-ratio:16/9; background:#0b0b0b; }
+.game-detail-art.art-cowdude img { max-height:none; object-fit:cover; }
+/* Screenshot strip on a game page. Same card language as .progress-card. */
+.game-shots { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:17px; }
+.game-shots img { width:100%; height:auto; display:block; border:1px solid var(--line); border-radius:11px; background:#0b0b0b; object-fit:cover; transition:transform .25s,border-color .25s; }
+.game-shots img:hover { transform:translateY(-4px); border-color:rgba(54,224,165,.4); }
 .engine-hero-art { min-height:0; aspect-ratio:16/9; background:#08151e; }
 .engine-hero-art img { max-height:none; object-fit:cover; }
 .engine-progress { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:0 0 48px; }
@@ -273,6 +279,7 @@ button { font:inherit; }
 }
 
 @media (max-width:760px) {
+  .game-shots { grid-template-columns:1fr; }
   .container { width:min(100% - 32px,1120px); }
   .site-header { position:sticky; }
   .nav-wrap { min-height:68px; display:grid; grid-template-columns:1fr auto; gap:0 14px; }
