@@ -341,6 +341,16 @@ button { font:inherit; }
   --accent: #0f766e;
 }
 [data-theme="light"] .visual-zero, [data-theme="light"] .visual-paws, [data-theme="light"] .visual-heir, [data-theme="light"] .visual-turf, [data-theme="light"] .visual-lineburst, [data-theme="light"] .visual-root, [data-theme="light"] .visual-signal, [data-theme="light"] .visual-ledger { filter: brightness(1.05); }
+[data-theme="light"] .site-header { background: rgba(248, 250, 252, 0.86); }
+[data-theme="light"] .tool-card, [data-theme="light"] .contact-card { background: var(--surface); }
+[data-theme="light"] .announcements-section { background: linear-gradient(180deg, rgba(15, 118, 110, 0.05), transparent 40%); }
+[data-theme="light"] .announcement-featured { background: linear-gradient(145deg, rgba(15, 118, 110, 0.1), var(--surface) 62%); }
+[data-theme="light"] .about-section { background: linear-gradient(110deg, rgba(15, 118, 110, 0.045), transparent 43%); }
+[data-theme="light"] .arcade-section { background: radial-gradient(circle at 75% 45%, rgba(15, 118, 110, 0.08), transparent 34%), var(--bg); }
+[data-theme="light"] .arcade-shell, [data-theme="light"] .game-detail-art, [data-theme="light"] .game-shots img { background: var(--surface); }
+[data-theme="light"] .game-detail-art.art-cowdude { background: var(--surface-light); }
+[data-theme="light"] .game-stage { background: var(--surface-light); }
+[data-theme="light"] .game-overlay { background: radial-gradient(circle, rgba(248, 250, 252, 0.68), rgba(248, 250, 252, 0.92)); }
 
 @media (max-width:960px) {
   .project-grid { grid-template-columns:repeat(2,1fr); }
