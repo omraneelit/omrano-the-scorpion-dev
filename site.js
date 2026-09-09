@@ -1,6 +1,26 @@
 (() => {
   "use strict";
 
+  // Theme Toggle
+  const themeToggles = document.querySelectorAll(".theme-toggle");
+  const savedTheme = localStorage.getItem("theme");
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  
+  if (savedTheme) {
+    document.documentElement.setAttribute("data-theme", savedTheme);
+  } else if (!prefersDark) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+
+  themeToggles.forEach(t => {
+    t.addEventListener("click", () => {
+      const currentTheme = document.documentElement.getAttribute("data-theme") || (prefersDark ? "dark" : "light");
+      const newTheme = currentTheme === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", newTheme);
+      localStorage.setItem("theme", newTheme);
+    });
+  });
+
   document.documentElement.classList.add("js");
 
   const UPDATE_BADGE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -164,7 +184,11 @@
   });
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reduceMotion || !("IntersectionObserver" in window)) {
+  const supportsTimeline = CSS.supports && CSS.supports("animation-timeline", "view()");
+
+  if (supportsTimeline) {
+    // Handled by CSS native scroll-driven animations
+  } else if (reduceMotion || !("IntersectionObserver" in window)) {
     revealItems.forEach(item => item.classList.add("is-visible"));
   } else {
     const revealObserver = new IntersectionObserver(entries => {
@@ -175,5 +199,67 @@
       });
     }, { rootMargin: "0px 0px -8%", threshold: 0.08 });
     revealItems.forEach(item => revealObserver.observe(item));
+  }
+
+  // Trailer Modal
+  const trailerModal = document.getElementById("trailer-modal");
+  const openTrailerBtns = document.querySelectorAll(".watch-trailer-btn");
+  const closeTrailerBtn = document.getElementById("close-trailer");
+  const trailerIframe = document.getElementById("trailer-iframe");
+
+  if (trailerModal && trailerIframe) {
+    // Placeholder video URL
+    const videoSrc = "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"; 
+    
+    openTrailerBtns.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        trailerIframe.src = videoSrc;
+        trailerModal.showModal();
+      });
+    });
+
+    closeTrailerBtn.addEventListener("click", () => {
+      trailerModal.close();
+      trailerIframe.src = "";
+    });
+
+    trailerModal.addEventListener("click", (e) => {
+      const dialogDimensions = trailerModal.getBoundingClientRect();
+      if (
+        e.clientX < dialogDimensions.left ||
+        e.clientX > dialogDimensions.right ||
+        e.clientY < dialogDimensions.top ||
+        e.clientY > dialogDimensions.bottom
+      ) {
+        trailerModal.close();
+        trailerIframe.src = "";
+      }
+    });
+  }
+
+  const heroSection = document.querySelector(".hero");
+  if (heroSection && !reduceMotion) {
+    const orb = heroSection.querySelector(".hero-orb");
+    const cards = heroSection.querySelectorAll(".pixel-card");
+    heroSection.addEventListener("mousemove", (e) => {
+      const rect = heroSection.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const moveX = (e.clientX - centerX) / rect.width;
+      const moveY = (e.clientY - centerY) / rect.height;
+      
+      if (orb) {
+        orb.style.transform = `translate(${moveX * -25}px, ${moveY * -25}px)`;
+      }
+      cards.forEach((card, index) => {
+        const factor = (index + 1) * 18;
+        card.style.transform = `translate(${moveX * factor}px, ${moveY * factor}px)`;
+      });
+    });
+    heroSection.addEventListener("mouseleave", () => {
+      if (orb) orb.style.transform = "";
+      cards.forEach(card => card.style.transform = "");
+    });
   }
 })();
