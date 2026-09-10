@@ -1,0 +1,23 @@
+{
+  "name": "Omrano The Scorpion Dev",
+  "short_name": "Omrano Dev",
+  "description": "Indie game studio crafting punchy, atmospheric games and developer tools in Godot.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#36e0a5",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/brand/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["games", "entertainment", "developer"]
+}

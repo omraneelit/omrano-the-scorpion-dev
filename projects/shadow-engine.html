@@ -83,6 +83,71 @@
       <p>Shadow Engine handles the systems shared by tycoon projects while leaving each game free to build its own world, art direction, and interface.</p>
       <ul><li>Visual venue, station, floor, economy, staff, customer, and theme authoring</li><li>Headless simulation for income, upgrades, hiring, unlocks, production chains, offline earnings, and prestige</li><li>Validation, safe fixes, project recovery, responsive UI definitions, and export preflight</li></ul>
     </section>
+
+    <!-- Interactive Simulation Sandbox Demo -->
+    <section id="sandbox" class="section engine-sandbox-section" aria-labelledby="sandbox-heading">
+      <div class="section-heading">
+        <div><p class="eyebrow">HEADLESS SIMULATION KERNEL // LIVE PREVIEW</p><h2 id="sandbox-heading">Interactive Tycoon Sandbox</h2></div>
+        <p class="section-intro">Experience Shadow Engine's event-driven simulation loop running live in your browser.</p>
+      </div>
+
+      <div class="sandbox-shell" id="tycoon-sandbox">
+        <div class="sandbox-topbar">
+          <div class="sandbox-venue-picker" role="radiogroup" aria-label="Venue preset selector">
+            <button class="venue-btn active" data-venue="coffee" type="button">☕ Sunrise Coffee</button>
+            <button class="venue-btn" data-venue="arcade" type="button">🕹️ Cyber Arcade</button>
+            <button class="venue-btn" data-venue="potions" type="button">🧪 Alchemist Lab</button>
+          </div>
+          <div class="sandbox-stats">
+            <div class="stat-pill"><span class="stat-lbl">VAULT</span><strong id="sandbox-vault">$0.00</strong></div>
+            <div class="stat-pill"><span class="stat-lbl">INCOME</span><strong id="sandbox-income">+$0.00 /s</strong></div>
+            <div class="stat-pill"><span class="stat-lbl">CUSTOMERS</span><strong id="sandbox-customers">0</strong></div>
+            <div class="stat-pill"><span class="stat-lbl">MULT</span><strong id="sandbox-mult">1.0x</strong></div>
+          </div>
+        </div>
+
+        <div class="sandbox-main-grid">
+          <!-- Visual Floor / Queue Stage -->
+          <div class="sandbox-stage">
+            <div class="stage-header">
+              <span class="stage-venue-title" id="stage-venue-title">☕ Sunrise Coffee — Floor 01</span>
+              <button class="button button-primary tap-serve-btn" id="sandbox-tap-btn" type="button">⚡ Manual Order (+<span id="tap-value">$5</span>)</button>
+            </div>
+            <div class="stations-grid" id="stations-grid">
+              <!-- Dynamically rendered stations -->
+            </div>
+            <div class="sandbox-canvas-wrap">
+              <canvas id="sandbox-queue-canvas" width="640" height="120" aria-label="Customer queue simulation visualizer"></canvas>
+            </div>
+          </div>
+
+          <!-- Store / Engine Controls -->
+          <div class="sandbox-sidebar">
+            <div class="sidebar-block">
+              <h3>SYSTEM UPGRADES</h3>
+              <div class="upgrade-list" id="sandbox-upgrades">
+                <!-- Dynamically filled upgrades -->
+              </div>
+            </div>
+            <div class="sidebar-block">
+              <div class="prestige-box">
+                <div>
+                  <strong>Prestige Expansion</strong>
+                  <p>Reset vault for permanent +1.0x global multiplier.</p>
+                </div>
+                <button class="button button-quiet" id="sandbox-prestige-btn" type="button">Expand (Req $500)</button>
+              </div>
+            </div>
+            <div class="sidebar-block">
+              <h3>KERNEL EVENT LOG</h3>
+              <div class="sandbox-event-log" id="sandbox-log" aria-live="polite">
+                <div class="log-entry"><span>[SYS]</span> Simulation initialized at 60 Hz tick.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
     <section id="progress" class="section engine-progress-section" aria-labelledby="progress-title">
       <div class="section-heading"><div><p class="eyebrow">CURRENT PROGRESS</p><h2 id="progress-title">What is working now</h2></div><p class="section-intro">The project is functional and actively being strengthened around its creator workflow and production foundation.</p></div>
       <div class="engine-progress">

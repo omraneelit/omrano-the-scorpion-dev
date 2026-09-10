@@ -33,6 +33,51 @@
   let pointerActive = false;
   let animationId = 0;
   let best = Number(localStorage.getItem("scorpionStrikeBest") || 0);
+  let overdriveTimer = 0;
+  let powerups = [];
+
+  const ACHIEVEMENTS = {
+    first_kill: { title: "FIRST STRIKE", desc: "Destroyed first void bug" },
+    ten_kills: { title: "SWARM SLAYER", desc: "Defeated 10 void invaders" },
+    armored_kill: { title: "ARMOR PIERCER", desc: "Shattered an armored void bug" },
+    wave_three: { title: "VETERAN PILOT", desc: "Reached Wave 3" },
+    century_score: { title: "CENTURY CLUB", desc: "Scored 1,000 points" }
+  };
+  let unlockedAchievements = JSON.parse(localStorage.getItem("scorpion_achievements") || "[]");
+
+  function checkAchievement(id) {
+    if (!unlockedAchievements.includes(id) && ACHIEVEMENTS[id]) {
+      unlockedAchievements.push(id);
+      localStorage.setItem("scorpion_achievements", JSON.stringify(unlockedAchievements));
+      sfxWaveClear();
+      if (window.showStudioToast) {
+        window.showStudioToast(`🏆 ACHIEVEMENT: ${ACHIEVEMENTS[id].title} — ${ACHIEVEMENTS[id].desc}`, "success");
+      }
+    }
+  }
+
+  function getLeaderboard() {
+    try {
+      return JSON.parse(localStorage.getItem("scorpion_leaderboard")) || [
+        { initials: "OMR", score: 2500 },
+        { initials: "SCO", score: 1800 },
+        { initials: "ACE", score: 1200 },
+        { initials: "GOD", score: 800 },
+        { initials: "BOT", score: 400 }
+      ];
+    } catch {
+      return [{ initials: "OMR", score: 2500 }];
+    }
+  }
+
+  function saveScoreToLeaderboard(scoreVal) {
+    if (scoreVal <= 0) return;
+    const board = getLeaderboard();
+    const initials = (prompt("NEW HIGH SCORE! Enter 3-letter initials:", "PIL") || "PIL").slice(0, 3).toUpperCase();
+    board.push({ initials, score: scoreVal });
+    board.sort((a, b) => b.score - a.score);
+    localStorage.setItem("scorpion_leaderboard", JSON.stringify(board.slice(0, 5)));
+  }
 
   const player = { x: W / 2, y: H - 64, vx: 0, invincible: 0 };
   let shots = [];
@@ -126,6 +171,8 @@
     fireClock = 0;
     spawnClock = 0.25;
     enemiesDown = 0;
+    overdriveTimer = 0;
+    powerups = [];
     shots = [];
     enemies = [];
     particles = [];
@@ -151,11 +198,20 @@
     best = Math.max(best, score);
     localStorage.setItem("scorpionStrikeBest", String(best));
     updateHud();
+
+    const board = getLeaderboard();
+    const qualifies = board.length < 5 || score > board[board.length - 1].score;
+    if (qualifies && score > 0) {
+      setTimeout(() => saveScoreToLeaderboard(score), 300);
+    }
+    const leaders = getLeaderboard().map((l, i) => `${i + 1}. ${l.initials} ${String(l.score).padStart(6, "0")}`).join(" | ");
+
     overlayTitle.textContent = "SIGNAL LOST";
-    overlayCopy.innerHTML = `Final score: ${String(score).padStart(6, "0")}<br>Best: ${String(best).padStart(6, "0")}`;
+    overlayCopy.innerHTML = `Final score: ${String(score).padStart(6, "0")}<br><span style="font-size:0.75rem; opacity:0.85;">Leaderboard: ${leaders}</span>`;
     startButton.innerHTML = "RETRY MISSION <span>↻</span>";
     overlay.classList.remove("is-hidden");
-    tone(80, 0.45, 0.07, "sawtooth");
+    tone(70, 0.55, 0.08, "sawtooth");
+    shakeStage();
   }
 
   function spawnEnemy() {
@@ -175,8 +231,17 @@
   }
 
   function fire() {
-    shots.push({ x: player.x - 13, y: player.y - 18 }, { x: player.x + 13, y: player.y - 18 });
-    burst(player.x, player.y - 24, "#36e0a5", 2, 55);
+    if (overdriveTimer > 0) {
+      shots.push(
+        { x: player.x - 16, y: player.y - 18 },
+        { x: player.x, y: player.y - 24 },
+        { x: player.x + 16, y: player.y - 18 }
+      );
+      burst(player.x, player.y - 24, "#38bdf8", 3, 70);
+    } else {
+      shots.push({ x: player.x - 13, y: player.y - 18 }, { x: player.x + 13, y: player.y - 18 });
+      burst(player.x, player.y - 24, "#36e0a5", 2, 55);
+    }
     sfxLaser();
   }
 
@@ -222,11 +287,12 @@
     player.vx *= Math.pow(0.0008, dt);
     player.x = Math.max(38, Math.min(W - 38, player.x + player.vx * dt));
     player.invincible = Math.max(0, player.invincible - dt);
+    overdriveTimer = Math.max(0, overdriveTimer - dt);
 
     fireClock -= dt;
     if ((keys.Space || pointerActive) && fireClock <= 0) {
       fire();
-      fireClock = Math.max(0.11, 0.2 - wave * 0.005);
+      fireClock = Math.max(0.09, (overdriveTimer > 0 ? 0.1 : 0.2) - wave * 0.005);
     }
 
     spawnClock -= dt;
@@ -237,6 +303,27 @@
 
     for (const shot of shots) shot.y -= 570 * dt;
     shots = shots.filter(shot => shot.y > -20);
+
+    for (const p of [...powerups]) {
+      p.y += 85 * dt;
+      if (Math.hypot(p.x - player.x, p.y - player.y) < 28) {
+        powerups.splice(powerups.indexOf(p), 1);
+        if (p.type === "shield") {
+          lives = Math.min(3, lives + 1);
+          updateHud();
+          burst(p.x, p.y, "#36e0a5", 16, 170);
+          sfxWaveClear();
+          if (window.showStudioToast) window.showStudioToast("🛡️ SHIELD REPAIRED (+1 LIFE)", "info");
+        } else {
+          overdriveTimer = 6;
+          burst(p.x, p.y, "#38bdf8", 16, 170);
+          sfxWaveClear();
+          if (window.showStudioToast) window.showStudioToast("⚡ OVERDRIVE READY (TRIPLE RAPID SHOT)", "info");
+        }
+      } else if (p.y > H + 30) {
+        powerups.splice(powerups.indexOf(p), 1);
+      }
+    }
 
     for (const enemy of [...enemies]) {
       enemy.t += dt;
@@ -269,12 +356,28 @@
             enemiesDown += 1;
             burst(enemy.x, enemy.y, enemy.armored ? "#f3cf6c" : "#36e0a5", 16, 185);
             sfxExplosion(enemy.armored);
-            if (enemy.armored) shakeStage();
+            if (enemy.armored) {
+              shakeStage();
+              checkAchievement("armored_kill");
+            }
+            checkAchievement("first_kill");
+            if (enemiesDown >= 10) checkAchievement("ten_kills");
+            if (score >= 1000) checkAchievement("century_score");
+
+            if (Math.random() < 0.14) {
+              powerups.push({
+                x: enemy.x,
+                y: enemy.y,
+                type: Math.random() < 0.5 ? "shield" : "overdrive"
+              });
+            }
+
             const nextWave = Math.floor(enemiesDown / 12) + 1;
             if (nextWave > wave) {
               wave = nextWave;
               score += 500;
               sfxWaveClear();
+              if (wave >= 3) checkAchievement("wave_three");
             }
             updateHud();
           }
@@ -363,7 +466,37 @@
     ctx.stroke();
     ctx.fillStyle = "#b6ffe6";
     ctx.beginPath(); ctx.arc(34, -10, 3.5, 0, Math.PI * 2); ctx.fill();
+    if (overdriveTimer > 0) {
+      ctx.strokeStyle = "rgba(56, 189, 248, " + (0.4 + Math.sin(Date.now() / 80) * 0.3) + ")";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 36, 0, Math.PI * 2);
+      ctx.stroke();
+    }
     ctx.restore();
+  }
+
+  function drawPowerups() {
+    for (const p of powerups) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      const isShield = p.type === "shield";
+      ctx.shadowColor = isShield ? "#36e0a5" : "#38bdf8";
+      ctx.shadowBlur = 10;
+      ctx.strokeStyle = isShield ? "#36e0a5" : "#38bdf8";
+      ctx.fillStyle = isShield ? "rgba(54, 224, 165, 0.25)" : "rgba(56, 189, 248, 0.25)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 9px monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(isShield ? "SHD" : "3X", 0, 0);
+      ctx.restore();
+    }
   }
 
   function drawEnemy(enemy) {
@@ -397,6 +530,7 @@
       ctx.fillRect(shot.x - 2, shot.y - 10, 4, 14);
     }
     ctx.shadowBlur = 0;
+    drawPowerups();
     for (const enemy of enemies) drawEnemy(enemy);
     for (const p of particles) {
       ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
