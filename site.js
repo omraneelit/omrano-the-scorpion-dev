@@ -262,4 +262,43 @@
       cards.forEach(card => card.style.transform = "");
     });
   }
+
+  // Scroll progress bar
+  const scrollBar = document.getElementById("scroll-progress");
+  if (scrollBar) {
+    const updateScrollProgress = () => {
+      const scrollPx = document.documentElement.scrollTop || document.body.scrollTop;
+      const winHeightPx = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = winHeightPx > 0 ? (scrollPx / winHeightPx) * 100 : 0;
+      scrollBar.style.width = `${Math.min(100, Math.max(0, scrolled))}%`;
+    };
+    window.addEventListener("scroll", updateScrollProgress, { passive: true });
+    updateScrollProgress();
+  }
+
+  // Interactive Card Spotlight & 3D Tilt
+  const spotlightCards = document.querySelectorAll(".announcement-card, .project-card, .tool-card, .progress-card");
+  spotlightCards.forEach(card => {
+    card.addEventListener("mousemove", e => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      card.style.setProperty("--mouse-x", `${x}px`);
+      card.style.setProperty("--mouse-y", `${y}px`);
+
+      if (!reduceMotion && card.classList.contains("project-card") && !card.classList.contains("project-card-coming")) {
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = ((y - centerY) / centerY) * -5;
+        const rotateY = ((x - centerX) / centerX) * 5;
+        card.style.transform = `perspective(800px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-5px)`;
+      }
+    });
+
+    card.addEventListener("mouseleave", () => {
+      if (!reduceMotion && card.classList.contains("project-card")) {
+        card.style.transform = "";
+      }
+    });
+  });
 })();

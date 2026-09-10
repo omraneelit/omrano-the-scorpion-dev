@@ -47,9 +47,16 @@
 
   bestEl.textContent = String(best).padStart(6, "0");
 
+  function initAudio() {
+    audio ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (audio && audio.state === "suspended") {
+      audio.resume();
+    }
+  }
+
   function tone(frequency, duration, volume, type = "square") {
     if (!soundOn) return;
-    audio ||= new (window.AudioContext || window.webkitAudioContext)();
+    initAudio();
     const oscillator = audio.createOscillator();
     const gain = audio.createGain();
     oscillator.type = type;
@@ -59,6 +66,50 @@
     oscillator.connect(gain).connect(audio.destination);
     oscillator.start();
     oscillator.stop(audio.currentTime + duration);
+  }
+
+  function sfxLaser() {
+    if (!soundOn) return;
+    initAudio();
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(860, audio.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(220, audio.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.03, audio.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.08);
+    osc.connect(gain).connect(audio.destination);
+    osc.start();
+    osc.stop(audio.currentTime + 0.08);
+  }
+
+  function sfxExplosion(big = false) {
+    if (!soundOn) return;
+    initAudio();
+    const duration = big ? 0.35 : 0.2;
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(big ? 140 : 220, audio.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(30, audio.currentTime + duration);
+    gain.gain.setValueAtTime(big ? 0.08 : 0.04, audio.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + duration);
+    osc.connect(gain).connect(audio.destination);
+    osc.start();
+    osc.stop(audio.currentTime + duration);
+  }
+
+  function sfxWaveClear() {
+    if (!soundOn) return;
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+      setTimeout(() => tone(freq, 0.12, 0.03, "triangle"), i * 65);
+    });
+  }
+
+  function shakeStage() {
+    stage.classList.remove("is-shaking");
+    void stage.offsetWidth;
+    stage.classList.add("is-shaking");
   }
 
   function updateHud() {
@@ -126,7 +177,7 @@
   function fire() {
     shots.push({ x: player.x - 13, y: player.y - 18 }, { x: player.x + 13, y: player.y - 18 });
     burst(player.x, player.y - 24, "#36e0a5", 2, 55);
-    tone(520, 0.045, 0.018);
+    sfxLaser();
   }
 
   function burst(x, y, color, count = 8, speed = 140) {
@@ -154,7 +205,8 @@
     flash.classList.remove("hit");
     void flash.offsetWidth;
     flash.classList.add("hit");
-    tone(110, 0.25, 0.08, "sawtooth");
+    sfxExplosion(true);
+    shakeStage();
     updateHud();
     if (lives <= 0) endGame();
   }
@@ -216,11 +268,13 @@
             score += enemy.armored ? 250 : 100;
             enemiesDown += 1;
             burst(enemy.x, enemy.y, enemy.armored ? "#f3cf6c" : "#36e0a5", 16, 185);
+            sfxExplosion(enemy.armored);
+            if (enemy.armored) shakeStage();
             const nextWave = Math.floor(enemiesDown / 12) + 1;
             if (nextWave > wave) {
               wave = nextWave;
               score += 500;
-              tone(720, 0.18, 0.045, "triangle");
+              sfxWaveClear();
             }
             updateHud();
           }
