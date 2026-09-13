@@ -201,43 +201,6 @@
     revealItems.forEach(item => revealObserver.observe(item));
   }
 
-  // Trailer Modal
-  const trailerModal = document.getElementById("trailer-modal");
-  const openTrailerBtns = document.querySelectorAll(".watch-trailer-btn");
-  const closeTrailerBtn = document.getElementById("close-trailer");
-  const trailerIframe = document.getElementById("trailer-iframe");
-
-  if (trailerModal && trailerIframe) {
-    // Placeholder video URL
-    const videoSrc = "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"; 
-    
-    openTrailerBtns.forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        trailerIframe.src = videoSrc;
-        trailerModal.showModal();
-      });
-    });
-
-    closeTrailerBtn.addEventListener("click", () => {
-      trailerModal.close();
-      trailerIframe.src = "";
-    });
-
-    trailerModal.addEventListener("click", (e) => {
-      const dialogDimensions = trailerModal.getBoundingClientRect();
-      if (
-        e.clientX < dialogDimensions.left ||
-        e.clientX > dialogDimensions.right ||
-        e.clientY < dialogDimensions.top ||
-        e.clientY > dialogDimensions.bottom
-      ) {
-        trailerModal.close();
-        trailerIframe.src = "";
-      }
-    });
-  }
-
   const heroSection = document.querySelector(".hero");
   if (heroSection && !reduceMotion) {
     const orb = heroSection.querySelector(".hero-orb");
@@ -611,26 +574,56 @@
     });
   });
 
-  // 8. Studio Jukebox ("Scorpion Radio")
+  // 8. Studio Jukebox ("Scorpion Radio" - Real Studio OST Tracks)
   const radioToggle = document.getElementById("radio-toggle-btn");
   const radioDrawer = document.getElementById("radio-drawer");
   const radioPlayBtn = document.getElementById("radio-play-btn");
   const radioPrevBtn = document.getElementById("radio-prev-btn");
   const radioNextBtn = document.getElementById("radio-next-btn");
   const radioTrackTitle = document.getElementById("radio-track-title");
+  const radioTrackGenre = document.getElementById("radio-track-genre");
+  const radioTimeDisplay = document.getElementById("radio-time-display");
+  const radioProgressBar = document.getElementById("radio-progress-bar");
+  const radioProgressFill = document.getElementById("radio-progress-fill");
   const radioCanvas = document.getElementById("radio-visualizer");
   const radioWrapper = document.getElementById("scorpion-radio");
+  const radioHideBtn = document.getElementById("radio-hide-btn");
+  const radioShowBtn = document.getElementById("radio-show-btn");
+  const radioDrawerClose = document.getElementById("radio-drawer-close");
 
   const radioTracks = [
-    { title: "Track 01: Neon Grid", tempo: 110, root: 220, scale: [0, 3, 5, 7, 10] },
-    { title: "Track 02: Deep Orbit", tempo: 90, root: 164.81, scale: [0, 2, 3, 7, 8] },
-    { title: "Track 03: Void Cyberpunk", tempo: 125, root: 146.83, scale: [0, 1, 5, 7, 8] }
+    {
+      id: "neon-grid",
+      title: "Track 01: Neon Grid",
+      genre: "Synthwave / Outrun (116 BPM)",
+      srcMp3: "assets/audio/track-01-neon-grid.mp3",
+      srcOgg: "assets/audio/track-01-neon-grid.ogg"
+    },
+    {
+      id: "deep-orbit",
+      title: "Track 02: Deep Orbit",
+      genre: "Ambient Chillwave (92 BPM)",
+      srcMp3: "assets/audio/track-02-deep-orbit.mp3",
+      srcOgg: "assets/audio/track-02-deep-orbit.ogg"
+    },
+    {
+      id: "void-cyberpunk",
+      title: "Track 03: Void Cyberpunk",
+      genre: "Dark Electro / Cyberpunk (128 BPM)",
+      srcMp3: "assets/audio/track-03-void-cyberpunk.mp3",
+      srcOgg: "assets/audio/track-03-void-cyberpunk.ogg"
+    }
   ];
+
   let currentTrackIdx = 0;
-  let audioCtx = null;
   let isRadioPlaying = false;
-  let radioTimer = null;
-  let radioStep = 0;
+  const audioElement = new Audio();
+  audioElement.preload = "auto";
+
+  let audioCtx = null;
+  let analyserNode = null;
+  let sourceNode = null;
+  let frequencyData = null;
 
   radioToggle?.addEventListener("click", () => {
     const isExpanded = radioToggle.getAttribute("aria-expanded") === "true";
@@ -638,90 +631,183 @@
     if (radioDrawer) radioDrawer.hidden = isExpanded;
   });
 
-  function startRadioAudio() {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  radioDrawerClose?.addEventListener("click", () => {
+    if (radioDrawer) radioDrawer.hidden = true;
+    radioToggle?.setAttribute("aria-expanded", "false");
+  });
+
+  // Dismiss track drawer when clicking outside
+  document.addEventListener("click", (e) => {
+    if (radioDrawer && !radioDrawer.hidden) {
+      if (!radioWrapper?.contains(e.target) && !radioToggle?.contains(e.target)) {
+        radioDrawer.hidden = true;
+        radioToggle?.setAttribute("aria-expanded", "false");
+      }
     }
-    if (audioCtx.state === "suspended") {
+  });
+
+  // Dismiss track drawer on Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && radioDrawer && !radioDrawer.hidden) {
+      radioDrawer.hidden = true;
+      radioToggle?.setAttribute("aria-expanded", "false");
+    }
+  });
+
+  function setRadioVisibility(visible) {
+    if (radioWrapper) radioWrapper.hidden = !visible;
+    if (radioShowBtn) radioShowBtn.hidden = visible;
+    if (!visible && radioDrawer) {
+      radioDrawer.hidden = true;
+      radioToggle?.setAttribute("aria-expanded", "false");
+    }
+    try {
+      localStorage.setItem("studio_radio_visible", visible ? "true" : "false");
+    } catch (_) {}
+  }
+
+  radioHideBtn?.addEventListener("click", () => {
+    setRadioVisibility(false);
+    window.showStudioToast?.("📻 Radio player hidden (click 📻 to restore)", "info");
+  });
+
+  radioShowBtn?.addEventListener("click", () => {
+    setRadioVisibility(true);
+    window.showStudioToast?.("📻 Radio player restored", "info");
+  });
+
+  try {
+    if (localStorage.getItem("studio_radio_visible") === "false") {
+      setRadioVisibility(false);
+    }
+  } catch (_) {}
+
+  function initWebAudio() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        audioCtx = new AudioContextClass();
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 64;
+        frequencyData = new Uint8Array(analyserNode.frequencyBinCount);
+        try {
+          sourceNode = audioCtx.createMediaElementSource(audioElement);
+          sourceNode.connect(analyserNode);
+          analyserNode.connect(audioCtx.destination);
+        } catch (e) {
+          // If media element source cannot connect directly, fallback to visual animation
+          console.warn("MediaElementSource note:", e);
+        }
+      }
+    }
+    if (audioCtx && audioCtx.state === "suspended") {
       audioCtx.resume();
     }
   }
 
-  function playRadioNote(freq, dur, gainVal, type = "sawtooth") {
-    if (!audioCtx || !isRadioPlaying) return;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    const filter = audioCtx.createBiquadFilter();
-
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(800, audioCtx.currentTime);
-    filter.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + dur);
-
-    gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(audioCtx.destination);
-
-    osc.start();
-    osc.stop(audioCtx.currentTime + dur);
+  function formatAudioTime(seconds) {
+    if (isNaN(seconds) || seconds < 0) return "0:00";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
   }
 
-  function tickRadio() {
-    if (!isRadioPlaying) return;
+  function updateTrackMetadata() {
     const track = radioTracks[currentTrackIdx];
-    const semitone = track.scale[radioStep % track.scale.length];
-    const freq = track.root * Math.pow(2, semitone / 12);
-
-    if (radioStep % 2 === 0) {
-      playRadioNote(track.root * 0.5, 0.35, 0.04, "triangle");
-    }
-    playRadioNote(freq, 0.18, 0.025, "sawtooth");
-
-    radioStep++;
-    const intervalMs = (60 / track.tempo / 2) * 1000;
-    radioTimer = setTimeout(tickRadio, intervalMs);
+    if (radioTrackTitle) radioTrackTitle.textContent = track.title;
+    if (radioTrackGenre) radioTrackGenre.textContent = track.genre;
   }
 
-  function toggleRadioPlayback() {
-    startRadioAudio();
-    isRadioPlaying = !isRadioPlaying;
+  function loadTrack(playImmediately = false) {
+    const track = radioTracks[currentTrackIdx];
+    updateTrackMetadata();
+    const canPlayOgg = audioElement.canPlayType("audio/ogg; codecs=vorbis");
+    audioElement.src = (canPlayOgg && track.srcOgg) ? track.srcOgg : track.srcMp3;
+    audioElement.load();
+
+    if (playImmediately) {
+      initWebAudio();
+      audioElement.play().then(() => {
+        setPlaybackState(true);
+      }).catch(err => {
+        console.warn("Audio playback prevented:", err);
+        setPlaybackState(false);
+      });
+    }
+  }
+
+  function setPlaybackState(playing) {
+    isRadioPlaying = playing;
     radioWrapper?.classList.toggle("radio-playing", isRadioPlaying);
     if (radioPlayBtn) radioPlayBtn.textContent = isRadioPlaying ? "⏸" : "▶";
     const statusLbl = radioToggle?.querySelector(".radio-status-label");
     if (statusLbl) statusLbl.textContent = isRadioPlaying ? "RADIO: ON" : "RADIO: OFF";
+  }
 
-    if (isRadioPlaying) {
-      tickRadio();
-      window.showStudioToast(`📻 Playing ${radioTracks[currentTrackIdx].title}`, "info");
+  function toggleRadioPlayback() {
+    initWebAudio();
+    if (audioElement.paused) {
+      if (!audioElement.src || audioElement.src === window.location.href) {
+        loadTrack(true);
+      } else {
+        audioElement.play().then(() => {
+          setPlaybackState(true);
+          window.showStudioToast(`📻 Playing ${radioTracks[currentTrackIdx].title}`, "info");
+        }).catch(err => {
+          console.warn("Playback error:", err);
+        });
+      }
     } else {
-      clearTimeout(radioTimer);
+      audioElement.pause();
+      setPlaybackState(false);
     }
   }
+
+  audioElement.addEventListener("play", () => setPlaybackState(true));
+  audioElement.addEventListener("pause", () => setPlaybackState(false));
+  audioElement.addEventListener("ended", () => {
+    currentTrackIdx = (currentTrackIdx + 1) % radioTracks.length;
+    loadTrack(true);
+    window.showStudioToast(`📻 Next Track: ${radioTracks[currentTrackIdx].title}`, "info");
+  });
+
+  audioElement.addEventListener("timeupdate", () => {
+    const cur = audioElement.currentTime || 0;
+    const dur = audioElement.duration || 0;
+    if (radioTimeDisplay) {
+      radioTimeDisplay.textContent = `${formatAudioTime(cur)} / ${formatAudioTime(dur)}`;
+    }
+    if (radioProgressFill && dur > 0) {
+      const pct = (cur / dur) * 100;
+      radioProgressFill.style.width = `${pct}%`;
+    }
+  });
+
+  radioProgressBar?.addEventListener("click", (e) => {
+    if (!audioElement.duration) return;
+    const rect = radioProgressBar.getBoundingClientRect();
+    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    audioElement.currentTime = pos * audioElement.duration;
+  });
 
   radioPlayBtn?.addEventListener("click", toggleRadioPlayback);
   radioNextBtn?.addEventListener("click", () => {
     currentTrackIdx = (currentTrackIdx + 1) % radioTracks.length;
-    radioStep = 0;
-    if (radioTrackTitle) radioTrackTitle.textContent = radioTracks[currentTrackIdx].title;
+    loadTrack(isRadioPlaying);
     if (isRadioPlaying) {
-      clearTimeout(radioTimer);
-      tickRadio();
+      window.showStudioToast(`📻 Playing ${radioTracks[currentTrackIdx].title}`, "info");
     }
   });
   radioPrevBtn?.addEventListener("click", () => {
     currentTrackIdx = (currentTrackIdx - 1 + radioTracks.length) % radioTracks.length;
-    radioStep = 0;
-    if (radioTrackTitle) radioTrackTitle.textContent = radioTracks[currentTrackIdx].title;
+    loadTrack(isRadioPlaying);
     if (isRadioPlaying) {
-      clearTimeout(radioTimer);
-      tickRadio();
+      window.showStudioToast(`📻 Playing ${radioTracks[currentTrackIdx].title}`, "info");
     }
   });
+
+  // Initial metadata setup
+  updateTrackMetadata();
 
   if (radioCanvas) {
     const vCtx = radioCanvas.getContext("2d");
@@ -729,16 +815,46 @@
       vCtx.clearRect(0, 0, radioCanvas.width, radioCanvas.height);
       const bars = 16;
       const barW = radioCanvas.width / bars - 2;
-      for (let i = 0; i < bars; i++) {
-        const h = isRadioPlaying
-          ? Math.max(3, (Math.sin(Date.now() / 120 + i * 0.5) * 0.5 + 0.5) * radioCanvas.height * 0.85)
-          : 3;
-        vCtx.fillStyle = isRadioPlaying ? "#36e0a5" : "rgba(255,255,255,0.2)";
-        vCtx.fillRect(i * (barW + 2), radioCanvas.height - h, barW, h);
+
+      if (isRadioPlaying && analyserNode && frequencyData) {
+        analyserNode.getByteFrequencyData(frequencyData);
+        for (let i = 0; i < bars; i++) {
+          const val = frequencyData[i * 2] || 0;
+          const h = Math.max(3, (val / 255) * radioCanvas.height * 0.92);
+          vCtx.fillStyle = "#36e0a5";
+          vCtx.fillRect(i * (barW + 2), radioCanvas.height - h, barW, h);
+        }
+      } else {
+        for (let i = 0; i < bars; i++) {
+          const h = isRadioPlaying
+            ? Math.max(3, (Math.sin(Date.now() / 120 + i * 0.5) * 0.5 + 0.5) * radioCanvas.height * 0.85)
+            : 3;
+          vCtx.fillStyle = isRadioPlaying ? "#36e0a5" : "rgba(255,255,255,0.2)";
+          vCtx.fillRect(i * (barW + 2), radioCanvas.height - h, barW, h);
+        }
       }
       requestAnimationFrame(renderVisualizer);
     }
     requestAnimationFrame(renderVisualizer);
+  }
+
+  // Back to Top Button
+  const backToTopBtn = document.getElementById("back-to-top-btn");
+  if (backToTopBtn) {
+    window.addEventListener("scroll", () => {
+      if (window.scrollY > 280) {
+        backToTopBtn.classList.add("is-visible");
+      } else {
+        backToTopBtn.classList.remove("is-visible");
+      }
+    }, { passive: true });
+
+    backToTopBtn.addEventListener("click", () => {
+      window.scrollTo({
+        top: 0,
+        behavior: reduceMotion ? "auto" : "smooth"
+      });
+    });
   }
 
   // 9. Global Command Palette
@@ -748,10 +864,11 @@
   const cmdResults = document.getElementById("cmd-results");
 
   const cmdItems = [
+    { title: "Scroll to Top of Page", badge: "NAV", action: () => window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }) },
     { title: "Toggle Dark / Light Theme", badge: "THEME", action: () => document.getElementById("theme-toggle")?.click() },
-    { title: "Toggle Studio Soundtrack Radio", badge: "AUDIO", action: () => toggleRadioPlayback() },
+    { title: "Toggle Studio Soundtrack Radio Playback", badge: "AUDIO", action: () => toggleRadioPlayback() },
+    { title: "Toggle Radio Player Visibility (Hide / Show)", badge: "AUDIO", action: () => setRadioVisibility(radioWrapper ? radioWrapper.hidden : true) },
     { title: "Launch Scorpion Strike Browser Arcade", badge: "ARCADE", action: () => { location.hash = "arcade"; document.getElementById("game-start")?.click(); } },
-    { title: "Watch Zero Hour: Protocol Trailer", badge: "MEDIA", action: () => document.querySelector(".watch-trailer-btn")?.click() },
     { title: "Open Quick Contact Terminal", badge: "CONTACT", action: () => openContactModal() },
     { title: "View Studio Press Kit & Media Assets", badge: "PRESS", action: () => openPresskitModal() },
     { title: "Copy Studio Email Address", badge: "CLIPBOARD", action: () => copyEmailToClipboard() },

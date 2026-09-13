@@ -343,16 +343,6 @@ button { font:inherit; }
 .js .project-card-coming.reveal.is-visible:hover { transform:none; }
 .js .progress-card.reveal.is-visible:hover { transform:translateY(-4px); }
 
-/* Trailer Modal */
-.trailer-modal { max-width: 800px; width: 90%; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-.trailer-modal::backdrop { background: rgba(9, 20, 30, 0.65); backdrop-filter: blur(10px); }
-.trailer-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--line); }
-.trailer-modal-header h3 { margin: 0; font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
-.trailer-close { background: transparent; border: none; color: var(--muted); font-size: 1.8rem; line-height: 1; cursor: pointer; transition: color 0.2s; padding: 0; }
-.trailer-close:hover { color: var(--accent); }
-.trailer-video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; }
-.trailer-video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
-
 /* Theme Toggle Button */
 .theme-toggle { background: transparent; border: 1px solid var(--line); border-radius: 50%; width: 44px; height: 44px; display: inline-grid; place-items: center; cursor: pointer; color: var(--muted); transition: color 0.2s, border-color 0.2s, background 0.2s; margin-left: auto; }
 .theme-toggle:hover { color: var(--accent); border-color: var(--accent); background: rgba(54,224,165,.07); }
@@ -440,10 +430,6 @@ button { font:inherit; }
 [data-theme="light"] .game-overlay > p:not(.game-kicker) { color: var(--muted); }
 [data-theme="light"] .game-start { background: var(--accent); color: #ffffff; }
 [data-theme="light"] .game-start:hover { background: var(--accent-deep); color: #ffffff; }
-
-/* Modal */
-[data-theme="light"] .trailer-modal { box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25); }
-[data-theme="light"] .trailer-modal::backdrop { background: rgba(15, 23, 42, 0.45); }
 
 @media (max-width:960px) {
   .project-grid { grid-template-columns:repeat(2,1fr); }
@@ -891,33 +877,133 @@ button { font:inherit; }
 }
 
 /* Floating Jukebox (Scorpion Radio) */
-.scorpion-radio {
+/* Floating Dock (Back to Top & Scorpion Radio) */
+.floating-dock {
   position: fixed;
   bottom: 24px;
   right: 24px;
   z-index: 1000;
-}
-.radio-toggle-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+/* Back to Top Button */
+.back-to-top-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px) scale(0.9);
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s, background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.back-to-top-btn.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+.back-to-top-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+}
+.back-to-top-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Radio Unhide Floating Button */
+.radio-show-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.radio-show-btn:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+}
+.radio-show-btn[hidden] {
+  display: none;
+}
+
+.scorpion-radio {
+  position: relative;
+}
+.radio-bar-group {
+  display: flex;
+  align-items: center;
   background: var(--surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  padding: 8px 14px;
   border-radius: 999px;
+  transition: all var(--trans);
+}
+.radio-bar-group:hover {
+  border-color: var(--accent);
+}
+.radio-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 8px 10px 8px 14px;
+  border-radius: 999px 0 0 999px;
   color: var(--text);
   font-family: var(--font-mono);
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--trans);
+  transition: color 0.2s;
 }
 .radio-toggle-btn:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
+  color: var(--accent);
+}
+.radio-hide-btn {
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 8px 12px 8px 10px;
+  border-radius: 0 999px 999px 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: color 0.2s, background 0.2s;
+}
+.radio-hide-btn:hover {
+  color: var(--accent);
+  background: rgba(255, 255, 255, 0.06);
 }
 .radio-anim-bars {
   display: inline-flex;
@@ -960,12 +1046,39 @@ button { font:inherit; }
   flex-direction: column;
   gap: 12px;
 }
+.radio-meta-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.radio-drawer-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 5px;
+  margin-left: auto;
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  transition: color 0.2s, background 0.2s;
+}
+.radio-drawer-close:hover {
+  color: var(--accent);
+  background: rgba(255, 255, 255, 0.08);
+}
 .radio-meta .radio-badge {
   font-family: var(--font-mono);
   font-size: 0.65rem;
   color: var(--accent);
   letter-spacing: 0.08em;
-  display: block;
+}
+.radio-meta .radio-timer {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
 }
 .radio-meta .radio-title {
   font-size: 0.88rem;
@@ -974,6 +1087,27 @@ button { font:inherit; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.radio-meta .radio-genre {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  display: block;
+}
+.radio-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-alt);
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+  margin-top: -2px;
+}
+.radio-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.1s linear;
 }
 .radio-visualizer {
   width: 100%;
@@ -1594,8 +1728,16 @@ button { font:inherit; }
 [data-theme="light"] .arcade-subnav {
   background: rgba(0, 0, 0, 0.04);
 }
-[data-theme="light"] .radio-toggle-btn {
+[data-theme="light"] .radio-bar-group {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .back-to-top-btn,
+[data-theme="light"] .radio-show-btn {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+[data-theme="light"] .radio-hide-btn:hover,
+[data-theme="light"] .radio-drawer-close:hover {
+  background: rgba(15, 23, 42, 0.06);
 }
 [data-theme="light"] .cmd-palette-box,
 [data-theme="light"] .studio-modal .modal-header,
