@@ -9,6 +9,8 @@
   --accent:#36e0a5;
   --accent-deep:#17aa78;
   --line:rgba(190,208,235,.15);
+  --border:var(--line);
+  --text-muted:var(--muted);
   --mono:"DM Mono",monospace;
   --sans:"Manrope",sans-serif;
   --display:"Space Grotesk",var(--sans);
@@ -21,10 +23,16 @@
   --surface-light: #f1f5f9;
   --text: #0f172a;
   --muted: #475569;
+  --text-muted: var(--muted);
   --accent: #0d9488;
   --accent-deep: #0f766e;
   --line: #e2e8f0;
+  --border: var(--line);
   color-scheme: light;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 /* Scroll progress bar */
@@ -955,6 +963,9 @@ button { font:inherit; }
 .scorpion-radio {
   position: relative;
 }
+.scorpion-radio[hidden] {
+  display: none !important;
+}
 .radio-bar-group {
   display: flex;
   align-items: center;
@@ -1045,6 +1056,9 @@ button { font:inherit; }
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+.radio-drawer[hidden] {
+  display: none !important;
 }
 .radio-meta-header {
   display: flex;

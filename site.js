@@ -631,7 +631,8 @@
     if (radioDrawer) radioDrawer.hidden = isExpanded;
   });
 
-  radioDrawerClose?.addEventListener("click", () => {
+  radioDrawerClose?.addEventListener("click", (e) => {
+    e.stopPropagation();
     if (radioDrawer) radioDrawer.hidden = true;
     radioToggle?.setAttribute("aria-expanded", "false");
   });
