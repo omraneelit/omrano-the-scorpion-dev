@@ -185,6 +185,8 @@
   function startGame() {
     reset();
     playing = true;
+    const shareScoreBtn = document.getElementById("game-share-score");
+    if (shareScoreBtn) shareScoreBtn.hidden = true;
     overlay.classList.add("is-hidden");
     lastTime = performance.now();
     cancelAnimationFrame(animationId);
@@ -193,10 +195,13 @@
     canvas.focus({ preventScroll: true });
   }
 
-  function endGame() {
+  function gameOver() {
     playing = false;
-    best = Math.max(best, score);
-    localStorage.setItem("scorpionStrikeBest", String(best));
+    cancelAnimationFrame(animationId);
+    if (score > best) {
+      best = score;
+      localStorage.setItem("scorpionStrikeBest", String(best));
+    }
     updateHud();
 
     const board = getLeaderboard();
@@ -209,6 +214,8 @@
     overlayTitle.textContent = "SIGNAL LOST";
     overlayCopy.innerHTML = `Final score: ${String(score).padStart(6, "0")}<br><span style="font-size:0.75rem; opacity:0.85;">Leaderboard: ${leaders}</span>`;
     startButton.innerHTML = "RETRY MISSION <span>↻</span>";
+    const shareScoreBtn = document.getElementById("game-share-score");
+    if (shareScoreBtn) shareScoreBtn.hidden = false;
     overlay.classList.remove("is-hidden");
     tone(70, 0.55, 0.08, "sawtooth");
     shakeStage();
@@ -314,6 +321,18 @@
           burst(p.x, p.y, "#36e0a5", 16, 170);
           sfxWaveClear();
           if (window.showStudioToast) window.showStudioToast("🛡️ SHIELD REPAIRED (+1 LIFE)", "info");
+        } else if (p.type === "emp") {
+          burst(player.x, player.y, "#f43f5e", 28, 250);
+          tone(90, 0.4, 0.08, "sawtooth");
+          shakeStage();
+          for (const e of [...enemies]) {
+            enemies.splice(enemies.indexOf(e), 1);
+            score += e.armored ? 250 : 100;
+            enemiesDown += 1;
+            burst(e.x, e.y, "#f43f5e", 16, 180);
+          }
+          updateHud();
+          if (window.showStudioToast) window.showStudioToast("💥 EMP DETONATED — VOID SWARM CLEARED!", "success");
         } else {
           overdriveTimer = 6;
           burst(p.x, p.y, "#38bdf8", 16, 170);
@@ -364,11 +383,13 @@
             if (enemiesDown >= 10) checkAchievement("ten_kills");
             if (score >= 1000) checkAchievement("century_score");
 
-            if (Math.random() < 0.14) {
+            if (Math.random() < 0.16) {
+              const r = Math.random();
+              const pType = r < 0.38 ? "shield" : (r < 0.76 ? "overdrive" : "emp");
               powerups.push({
                 x: enemy.x,
                 y: enemy.y,
-                type: Math.random() < 0.5 ? "shield" : "overdrive"
+                type: pType
               });
             }
 
@@ -481,10 +502,13 @@
       ctx.save();
       ctx.translate(p.x, p.y);
       const isShield = p.type === "shield";
-      ctx.shadowColor = isShield ? "#36e0a5" : "#38bdf8";
+      const isEmp = p.type === "emp";
+      const col = isShield ? "#36e0a5" : (isEmp ? "#f43f5e" : "#38bdf8");
+      const bg = isShield ? "rgba(54, 224, 165, 0.25)" : (isEmp ? "rgba(244, 63, 94, 0.3)" : "rgba(56, 189, 248, 0.25)");
+      ctx.shadowColor = col;
       ctx.shadowBlur = 10;
-      ctx.strokeStyle = isShield ? "#36e0a5" : "#38bdf8";
-      ctx.fillStyle = isShield ? "rgba(54, 224, 165, 0.25)" : "rgba(56, 189, 248, 0.25)";
+      ctx.strokeStyle = col;
+      ctx.fillStyle = bg;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(0, 0, 11, 0, Math.PI * 2);
@@ -494,7 +518,7 @@
       ctx.font = "bold 9px monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(isShield ? "SHD" : "3X", 0, 0);
+      ctx.fillText(isShield ? "SHD" : (isEmp ? "EMP" : "3X"), 0, 0);
       ctx.restore();
     }
   }
@@ -594,6 +618,78 @@
       keys.Space = false;
       pointerActive = false;
       lastTime = performance.now();
+    }
+  });
+
+  // Mobile Touch Controls
+  const touchLeft = document.getElementById("touch-left");
+  const touchRight = document.getElementById("touch-right");
+  const touchFire = document.getElementById("touch-fire");
+
+  function bindTouchButton(btn, keyCode) {
+    if (!btn) return;
+    const activate = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      canvas.focus({ preventScroll: true });
+      keys[keyCode] = true;
+    };
+    const deactivate = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      keys[keyCode] = false;
+    };
+    btn.addEventListener("pointerdown", activate);
+    btn.addEventListener("pointerup", deactivate);
+    btn.addEventListener("pointerleave", deactivate);
+    btn.addEventListener("pointercancel", deactivate);
+    btn.addEventListener("contextmenu", e => e.preventDefault());
+  }
+
+  bindTouchButton(touchLeft, "ArrowLeft");
+  bindTouchButton(touchRight, "ArrowRight");
+  bindTouchButton(touchFire, "Space");
+
+  // Share Score Handlers
+  const shareBtn = document.getElementById("game-share-score");
+  shareBtn?.addEventListener("click", async () => {
+    const text = `🎮 I survived to Wave ${wave} and scored ${score} pts in Scorpion Strike on Omrano The Scorpion Dev! Can you beat my signal defense?`;
+    const url = window.location.origin + window.location.pathname + "#arcade";
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Scorpion Strike Arcade Score", text, url });
+        return;
+      } catch (e) {
+        if (e.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(`${text} ${url}`);
+      window.showStudioToast?.("🏆 Score copied to clipboard!", "success");
+    } catch (_) {
+      window.prompt("Share your high score:", `${text} ${url}`);
+    }
+  });
+
+  const hallShareBtn = document.getElementById("btn-share-hall");
+  hallShareBtn?.addEventListener("click", async () => {
+    const board = getLeaderboard();
+    const topScore = board[0] ? `${board[0].initials} (${board[0].score} pts)` : "N/A";
+    const text = `🏆 Station Hall of Fame Record: ${topScore} on Scorpion Strike! Try to beat it at Omrano The Scorpion Dev:`;
+    const url = window.location.origin + window.location.pathname + "#arcade";
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Scorpion Strike Hall of Fame", text, url });
+        return;
+      } catch (e) {
+        if (e.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(`${text} ${url}`);
+      window.showStudioToast?.("🏆 Hall of Fame copied to clipboard!", "success");
+    } catch (_) {
+      window.prompt("Share Hall of Fame:", `${text} ${url}`);
     }
   });
 

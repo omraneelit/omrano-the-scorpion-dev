@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Omrano The Scorpion Dev - Studio Devlog &amp; Releases</title>
+    <link>https://omrano-the-scorpion.com/</link>
+    <description>Official announcements, game releases, and devlogs from indie game and app developer Omrano The Scorpion Dev.</description>
+    <language>en-us</language>
+    <atom:link href="https://omrano-the-scorpion.com/feed.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 13 Sep 2026 08:00:00 GMT</lastBuildDate>
+
+    <item>
+      <title>Paws &amp; Platters is open for business</title>
+      <link>https://omrano-the-scorpion.com/games/paws-and-platters.html</link>
+      <guid>https://omrano-the-scorpion.com/games/paws-and-platters.html</guid>
+      <pubDate>Wed, 29 Jul 2026 12:00:00 GMT</pubDate>
+      <description><![CDATA[Build your own cozy pet café, serve adorable customers, and grow your restaurant with upgrades and idle earnings. Playable now on itch.io!]]></description>
+    </item>
+
+    <item>
+      <title>Lineburst is live on itch.io</title>
+      <link>https://omrano-the-scorpion.com/games/lineburst.html</link>
+      <guid>https://omrano-the-scorpion.com/games/lineburst.html</guid>
+      <pubDate>Wed, 29 Jul 2026 10:00:00 GMT</pubDate>
+      <description><![CDATA[The 8x8 block puzzler is ready to play with five modes, satisfying combos, and offline support.]]></description>
+    </item>
+
+    <item>
+      <title>I'm working on Shadow Engine</title>
+      <link>https://omrano-the-scorpion.com/projects/shadow-engine.html</link>
+      <guid>https://omrano-the-scorpion.com/projects/shadow-engine.html</guid>
+      <pubDate>Wed, 29 Jul 2026 08:00:00 GMT</pubDate>
+      <description><![CDATA[Shadow Engine is a data-driven framework for creating tycoon and idle games in Godot 4.7, with tools for venues, economies, upgrades, staff, customers, and production chains.]]></description>
+    </item>
+
+    <item>
+      <title>Turf Bag: Alley Mafia playable release</title>
+      <link>https://omrano-the-scorpion.com/games/turf-bag-alley-mafia.html</link>
+      <guid>https://omrano-the-scorpion.com/games/turf-bag-alley-mafia.html</guid>
+      <pubDate>Tue, 28 Jul 2026 14:00:00 GMT</pubDate>
+      <description><![CDATA[Pack, merge, and position weapons in a tactical bag while rival alley gangs grow stronger each wave. Playable on itch.io!]]></description>
+    </item>
+  </channel>
+</rss>

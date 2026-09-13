@@ -1,4 +1,4 @@
-const CACHE_NAME = "omrano-studio-v1";
+const CACHE_NAME = "omrano-studio-v2";
 const ASSETS = [
   "./",
   "./index.html",
@@ -6,8 +6,15 @@ const ASSETS = [
   "./site.js",
   "./game.js",
   "./favicon.svg",
+  "./feed.xml",
   "./privacy.html",
-  "./projects/shadow-engine.html"
+  "./projects/shadow-engine.html",
+  "./games/cowdude-open-world.html",
+  "./games/heir-of-the-wilds.html",
+  "./games/lineburst.html",
+  "./games/paws-and-platters.html",
+  "./games/turf-bag-alley-mafia.html",
+  "./games/zero-hour-protocol.html"
 ];
 
 self.addEventListener("install", event => {

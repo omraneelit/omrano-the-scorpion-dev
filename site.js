@@ -590,6 +590,8 @@
   const radioHideBtn = document.getElementById("radio-hide-btn");
   const radioShowBtn = document.getElementById("radio-show-btn");
   const radioDrawerClose = document.getElementById("radio-drawer-close");
+  const radioVolumeSlider = document.getElementById("radio-volume-slider");
+  const radioVolumeBtn = document.getElementById("radio-volume-btn");
 
   const radioTracks = [
     {
@@ -810,6 +812,51 @@
   // Initial metadata setup
   updateTrackMetadata();
 
+  // Volume & Mute control
+  let savedVolume = 0.8;
+  try {
+    const v = localStorage.getItem("studio_radio_volume");
+    if (v !== null) savedVolume = parseFloat(v);
+  } catch (_) {}
+
+  audioElement.volume = isNaN(savedVolume) ? 0.8 : Math.max(0, Math.min(1, savedVolume));
+  if (radioVolumeSlider) radioVolumeSlider.value = String(audioElement.volume);
+
+  function updateVolumeIcon() {
+    if (!radioVolumeBtn) return;
+    if (audioElement.muted || audioElement.volume === 0) {
+      radioVolumeBtn.textContent = "🔇";
+      radioVolumeBtn.setAttribute("aria-label", "Unmute radio");
+    } else if (audioElement.volume < 0.5) {
+      radioVolumeBtn.textContent = "🔉";
+      radioVolumeBtn.setAttribute("aria-label", "Mute radio");
+    } else {
+      radioVolumeBtn.textContent = "🔊";
+      radioVolumeBtn.setAttribute("aria-label", "Mute radio");
+    }
+  }
+  updateVolumeIcon();
+
+  radioVolumeSlider?.addEventListener("input", (e) => {
+    const vol = parseFloat(e.target.value);
+    audioElement.volume = vol;
+    audioElement.muted = (vol === 0);
+    updateVolumeIcon();
+    try {
+      localStorage.setItem("studio_radio_volume", String(vol));
+    } catch (_) {}
+  });
+
+  radioVolumeBtn?.addEventListener("click", () => {
+    audioElement.muted = !audioElement.muted;
+    if (!audioElement.muted && audioElement.volume === 0) {
+      audioElement.volume = 0.8;
+      if (radioVolumeSlider) radioVolumeSlider.value = "0.8";
+    }
+    updateVolumeIcon();
+    window.showStudioToast?.(audioElement.muted ? "🔇 Radio Muted" : "🔊 Radio Unmuted", "info");
+  });
+
   if (radioCanvas) {
     const vCtx = radioCanvas.getContext("2d");
     function renderVisualizer() {
@@ -867,8 +914,16 @@
   const cmdItems = [
     { title: "Scroll to Top of Page", badge: "NAV", action: () => window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }) },
     { title: "Toggle Dark / Light Theme", badge: "THEME", action: () => document.getElementById("theme-toggle")?.click() },
-    { title: "Toggle Studio Soundtrack Radio Playback", badge: "AUDIO", action: () => toggleRadioPlayback() },
-    { title: "Toggle Radio Player Visibility (Hide / Show)", badge: "AUDIO", action: () => setRadioVisibility(radioWrapper ? radioWrapper.hidden : true) },
+    { title: "Radio: Play / Pause Studio Soundtrack", badge: "AUDIO", action: () => toggleRadioPlayback() },
+    { title: "Radio: Next Track", badge: "AUDIO", action: () => radioNextBtn?.click() },
+    { title: "Radio: Previous Track", badge: "AUDIO", action: () => radioPrevBtn?.click() },
+    { title: "Radio: Mute / Unmute Volume", badge: "AUDIO", action: () => radioVolumeBtn?.click() },
+    { title: "Radio: Play Track 01 - Neon Grid", badge: "AUDIO", action: () => { currentTrackIdx = 0; loadTrack(true); } },
+    { title: "Radio: Play Track 02 - Deep Orbit", badge: "AUDIO", action: () => { currentTrackIdx = 1; loadTrack(true); } },
+    { title: "Radio: Play Track 03 - Void Cyberpunk", badge: "AUDIO", action: () => { currentTrackIdx = 2; loadTrack(true); } },
+    { title: "Radio: Toggle Player Dock Visibility", badge: "AUDIO", action: () => setRadioVisibility(radioWrapper ? radioWrapper.hidden : true) },
+    { title: "Subscribe to Studio RSS Devlog Feed", badge: "RSS", action: () => window.open("feed.xml", "_blank") },
+    { title: "Follow Studio on itch.io", badge: "ITCH", action: () => window.open("https://omrane-el-it.itch.io/", "_blank") },
     { title: "Launch Scorpion Strike Browser Arcade", badge: "ARCADE", action: () => { location.hash = "arcade"; document.getElementById("game-start")?.click(); } },
     { title: "Open Quick Contact Terminal", badge: "CONTACT", action: () => openContactModal() },
     { title: "View Studio Press Kit & Media Assets", badge: "PRESS", action: () => openPresskitModal() },
@@ -1277,4 +1332,36 @@ Contact: omraneelitdev@gmail.com`;
     }
     requestAnimationFrame(simLoop);
   }
+
+  // Universal Web Share Buttons
+  document.querySelectorAll(".card-share-btn, .quick-share-btn").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const title = btn.getAttribute("data-share-title") || "Omrano The Scorpion Dev";
+      const relUrl = btn.getAttribute("data-share-url") || "";
+      const fullUrl = new URL(relUrl, window.location.href).href;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: title,
+            text: `Check out "${title}" by Omrano The Scorpion Dev:`,
+            url: fullUrl
+          });
+          return;
+        } catch (err) {
+          if (err.name === "AbortError") return;
+        }
+      }
+
+      // Fallback: Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(fullUrl);
+        window.showStudioToast?.("📋 Link copied to clipboard!", "success");
+      } catch (_) {
+        window.prompt("Copy link to share:", fullUrl);
+      }
+    });
+  });
 })();

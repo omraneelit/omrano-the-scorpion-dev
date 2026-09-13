@@ -319,6 +319,18 @@ button { font:inherit; }
 .game-overlay > p:not(.game-kicker) { margin:18px 0 24px; color:#9cadaf; font:400 clamp(.72rem,1.4vw,.88rem)/1.7 var(--mono); }
 .game-start { min-width:190px; min-height:44px; display:inline-flex; justify-content:space-between; align-items:center; gap:20px; padding:13px 17px; border:0; border-radius:6px; background:var(--accent); color:#071a16; font:800 .72rem var(--mono); letter-spacing:.05em; cursor:pointer; transition:transform .2s,background .2s; }
 .game-start:hover { transform:translateY(-2px); background:#79f2ca; }
+.game-overlay-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.game-share-score { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border: 1px solid var(--accent); border-radius: 6px; background: rgba(54, 224, 165, 0.12); color: var(--accent); font: 700 0.72rem var(--mono); letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s; }
+.game-share-score:hover { background: var(--accent); color: #071a16; transform: translateY(-2px); }
+.arcade-touch-bar { position: absolute; bottom: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 5; }
+@media (hover: hover) and (pointer: fine) {
+  .arcade-touch-bar { display: none; }
+}
+.arcade-touch-left, .arcade-touch-right { display: flex; gap: 10px; pointer-events: auto; }
+.touch-btn { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(54, 224, 165, 0.4); color: var(--text); font-family: var(--mono); font-weight: 700; border-radius: 8px; touch-action: manipulation; user-select: none; -webkit-user-select: none; display: grid; place-items: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); transition: background 0.1s, transform 0.1s; }
+.touch-btn:active { background: rgba(54, 224, 165, 0.3); border-color: var(--accent); transform: scale(0.94); }
+.touch-btn-move { width: 44px; height: 44px; font-size: 1.1rem; }
+.touch-btn-fire { height: 44px; padding: 0 16px; font-size: 0.8rem; letter-spacing: 0.05em; color: var(--accent); border-color: var(--accent); }
 .game-flash { position:absolute; inset:0; pointer-events:none; opacity:0; background:rgba(255,65,92,.22); }
 .game-flash.hit { animation:damage-flash .28s ease-out; }
 @keyframes damage-flash { 0% { opacity:1; } 100% { opacity:0; } }
@@ -1045,7 +1057,7 @@ button { font:inherit; }
   position: absolute;
   bottom: calc(100% + 12px);
   right: 0;
-  width: 240px;
+  width: 252px;
   background: var(--surface);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -1056,6 +1068,18 @@ button { font:inherit; }
   display: flex;
   flex-direction: column;
   gap: 12px;
+  transform-origin: bottom right;
+  animation: drawerSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes drawerSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 .radio-drawer[hidden] {
   display: none !important;
@@ -1154,6 +1178,129 @@ button { font:inherit; }
   color: #04100c;
   font-weight: 700;
   padding: 6px 18px;
+}
+.radio-volume-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 9px;
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.radio-volume-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  color: var(--text);
+  transition: transform 0.15s;
+}
+.radio-volume-btn:hover {
+  transform: scale(1.15);
+}
+.radio-volume-slider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--surface-light);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.radio-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.radio-volume-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+}
+.radio-volume-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  box-shadow: 0 0 6px var(--accent);
+  cursor: pointer;
+}
+
+/* Badge & Sharing Components */
+.announcements-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.announcement-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 14px;
+}
+.rss-link-badge, .itch-follow-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.2s, transform 0.2s, background 0.2s, color 0.2s;
+}
+.rss-link-badge:hover, .itch-follow-badge:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+.card-share-btn, .quick-share-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  padding: 4px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.card-share-btn:hover, .quick-share-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(54, 224, 165, 0.08);
+}
+.games-heading-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.leaderboard-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* Global Command Palette Modal */
