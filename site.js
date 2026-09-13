@@ -306,6 +306,8 @@
     let mouse = { x: -1000, y: -1000 };
     const numPoints = 35;
     let points = [];
+    let isHeroVisible = true;
+    let particleAnimationId = 0;
 
     function resizeCanvas() {
       const rect = heroCanvas.parentElement.getBoundingClientRect();
@@ -333,6 +335,10 @@
     });
 
     function drawHeroParticles() {
+      if (!isHeroVisible) {
+        particleAnimationId = 0;
+        return;
+      }
       ctx.clearRect(0, 0, w, h);
       const isDark = document.documentElement.getAttribute("data-theme") !== "light";
       const dotColor = isDark ? "rgba(54, 224, 165, 0.45)" : "rgba(10, 114, 82, 0.45)";
@@ -376,9 +382,25 @@
           ctx.stroke();
         }
       }
-      requestAnimationFrame(drawHeroParticles);
+      particleAnimationId = requestAnimationFrame(drawHeroParticles);
     }
-    requestAnimationFrame(drawHeroParticles);
+
+    if ("IntersectionObserver" in window) {
+      const heroObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          isHeroVisible = entry.isIntersecting;
+          if (isHeroVisible && !particleAnimationId) {
+            particleAnimationId = requestAnimationFrame(drawHeroParticles);
+          } else if (!isHeroVisible && particleAnimationId) {
+            cancelAnimationFrame(particleAnimationId);
+            particleAnimationId = 0;
+          }
+        });
+      }, { threshold: 0.05 });
+      heroObserver.observe(heroCanvas);
+    } else {
+      particleAnimationId = requestAnimationFrame(drawHeroParticles);
+    }
   }
 
   // 4. Live Game Catalog Filter & Search Bar
@@ -424,6 +446,17 @@
       applyGameFilters();
     });
   });
+
+  function checkUrlGameFilter() {
+    const params = new URLSearchParams(window.location.search);
+    const filterParam = params.get("filter") || params.get("genre") || params.get("tag");
+    if (filterParam) {
+      const target = filterParam.toLowerCase();
+      const matchingTab = document.querySelector(`.game-filter-tabs .filter-tab[data-filter="${target}"]`);
+      if (matchingTab) matchingTab.click();
+    }
+  }
+  checkUrlGameFilter();
 
   // 5. Devlog & Announcements Category Tabs
   const annTabs = document.querySelectorAll(".announcement-filter-tabs .filter-tab");
@@ -476,13 +509,15 @@
 
   function refreshAchievementsUI() {
     try {
-      const stored = JSON.parse(localStorage.getItem("scorpion_achievements") || "{}");
+      const raw = localStorage.getItem("scorpion_achievements");
+      const stored = raw ? JSON.parse(raw) : null;
       const ids = ["first_kill", "ten_kills", "armored_kill", "wave_three", "century_score"];
       let count = 0;
       ids.forEach(id => {
         const item = document.querySelector(`.achievement-item[data-id="${id}"]`);
         const badge = document.getElementById(`badge-${id}`);
-        if (stored[id]) {
+        const isUnlocked = Array.isArray(stored) ? stored.includes(id) : Boolean(stored && stored[id]);
+        if (isUnlocked) {
           count++;
           item?.classList.add("unlocked");
           if (badge) badge.textContent = "UNLOCKED";
@@ -493,6 +528,7 @@
     } catch (_) {}
   }
   refreshAchievementsUI();
+  window.addEventListener("scorpion_achievements_updated", refreshAchievementsUI);
 
   function refreshLeaderboardUI() {
     try {
@@ -509,13 +545,15 @@
       tbody.innerHTML = saved.slice(0, 5).map((s, idx) => `
         <tr>
           <td>0${idx + 1}</td>
-          <td>${s.name}</td>
+          <td>${s.name || s.initials || "PIL"}</td>
           <td>${String(s.score).padStart(6, "0")}</td>
-          <td>WAVE 0${s.wave}</td>
+          <td>WAVE 0${s.wave || 1}</td>
         </tr>
       `).join("");
     } catch (_) {}
   }
+  refreshLeaderboardUI();
+  window.addEventListener("scorpion_scores_updated", refreshLeaderboardUI);
 
   // 7. Tech Stack Radar Drawer
   const techCards = document.querySelectorAll(".tech-radar-card");
@@ -620,7 +658,7 @@
   let currentTrackIdx = 0;
   let isRadioPlaying = false;
   const audioElement = new Audio();
-  audioElement.preload = "auto";
+  audioElement.preload = "none";
 
   let audioCtx = null;
   let analyserNode = null;
@@ -715,10 +753,17 @@
     return `${m}:${s < 10 ? "0" : ""}${s}`;
   }
 
+  const radioTrackSelect = document.getElementById("radio-track-select");
+  radioTrackSelect?.addEventListener("change", () => {
+    currentTrackIdx = Number(radioTrackSelect.value);
+    loadTrack(true);
+  });
+
   function updateTrackMetadata() {
     const track = radioTracks[currentTrackIdx];
     if (radioTrackTitle) radioTrackTitle.textContent = track.title;
     if (radioTrackGenre) radioTrackGenre.textContent = track.genre;
+    if (radioTrackSelect) radioTrackSelect.value = String(currentTrackIdx);
   }
 
   function loadTrack(playImmediately = false) {
@@ -911,6 +956,15 @@
   const cmdInput = document.getElementById("cmd-input");
   const cmdResults = document.getElementById("cmd-results");
 
+  const isSubpage = location.pathname.includes("/games/") || location.pathname.includes("/projects/");
+  const navTo = (hash) => {
+    if (isSubpage) {
+      window.location.href = `../index.html#${hash}`;
+    } else {
+      location.hash = hash;
+    }
+  };
+
   const cmdItems = [
     { title: "Scroll to Top of Page", badge: "NAV", action: () => window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }) },
     { title: "Toggle Dark / Light Theme", badge: "THEME", action: () => document.getElementById("theme-toggle")?.click() },
@@ -922,16 +976,16 @@
     { title: "Radio: Play Track 02 - Deep Orbit", badge: "AUDIO", action: () => { currentTrackIdx = 1; loadTrack(true); } },
     { title: "Radio: Play Track 03 - Void Cyberpunk", badge: "AUDIO", action: () => { currentTrackIdx = 2; loadTrack(true); } },
     { title: "Radio: Toggle Player Dock Visibility", badge: "AUDIO", action: () => setRadioVisibility(radioWrapper ? radioWrapper.hidden : true) },
-    { title: "Subscribe to Studio RSS Devlog Feed", badge: "RSS", action: () => window.open("feed.xml", "_blank") },
+    { title: "Subscribe to Studio RSS Devlog Feed", badge: "RSS", action: () => window.open(isSubpage ? "../feed.xml" : "feed.xml", "_blank") },
     { title: "Follow Studio on itch.io", badge: "ITCH", action: () => window.open("https://omrane-el-it.itch.io/", "_blank") },
-    { title: "Launch Scorpion Strike Browser Arcade", badge: "ARCADE", action: () => { location.hash = "arcade"; document.getElementById("game-start")?.click(); } },
+    { title: "Launch Scorpion Strike Browser Arcade", badge: "ARCADE", action: () => { if (isSubpage) window.location.href = "../index.html#arcade"; else { location.hash = "arcade"; document.getElementById("game-start")?.click(); } } },
     { title: "Open Quick Contact Terminal", badge: "CONTACT", action: () => openContactModal() },
     { title: "View Studio Press Kit & Media Assets", badge: "PRESS", action: () => openPresskitModal() },
     { title: "Copy Studio Email Address", badge: "CLIPBOARD", action: () => copyEmailToClipboard() },
-    { title: "Jump to Featured Games", badge: "NAV", action: () => location.hash = "games" },
-    { title: "Jump to Announcements & Devlogs", badge: "NAV", action: () => location.hash = "announcements" },
-    { title: "Jump to Shadow Engine Framework", badge: "NAV", action: () => location.hash = "tools" },
-    { title: "Jump to Tech Stack Radar", badge: "NAV", action: () => location.hash = "about" },
+    { title: "Jump to Featured Games", badge: "NAV", action: () => navTo("games") },
+    { title: "Jump to Announcements & Devlogs", badge: "NAV", action: () => navTo("announcements") },
+    { title: "Jump to Shadow Engine Framework", badge: "NAV", action: () => navTo("tools") },
+    { title: "Jump to Tech Stack Radar", badge: "NAV", action: () => navTo("about") },
     { title: "Play Lineburst (itch.io)", badge: "GAME", action: () => window.open("https://omrane-el-it.itch.io/linebrust", "_blank") },
     { title: "Play Paws & Platters (itch.io)", badge: "GAME", action: () => window.open("https://omrane-el-it.itch.io/pawsandplatters", "_blank") },
     { title: "Play Turf Bag: Alley Mafia (itch.io)", badge: "GAME", action: () => window.open("https://omrane-el-it.itch.io/turfbagalleymafia", "_blank") }
@@ -970,7 +1024,20 @@
     renderCmdResults(filtered);
   }
 
+  let lastModalTrigger = null;
+  function registerModalFocusRestore(dialog) {
+    if (!dialog) return;
+    dialog.addEventListener("close", () => {
+      if (lastModalTrigger && typeof lastModalTrigger.focus === "function") {
+        lastModalTrigger.focus();
+        lastModalTrigger = null;
+      }
+    });
+  }
+  registerModalFocusRestore(cmdModal);
+
   openCmdBtn?.addEventListener("click", () => {
+    lastModalTrigger = openCmdBtn;
     cmdModal?.showModal();
     if (cmdInput) cmdInput.value = "";
     filterCommands();
@@ -983,6 +1050,7 @@
       if (cmdModal?.open) {
         cmdModal.close();
       } else {
+        lastModalTrigger = document.activeElement;
         cmdModal?.showModal();
         if (cmdInput) cmdInput.value = "";
         filterCommands();
@@ -1029,9 +1097,11 @@
 
   const lightboxTriggers = [...document.querySelectorAll(".lightbox-trigger")];
   let currentLightboxIdx = 0;
+  registerModalFocusRestore(lightboxModal);
 
   function showLightbox(idx) {
     if (!lightboxModal || !lightboxImg || !lightboxTriggers.length) return;
+    lastModalTrigger = document.activeElement;
     currentLightboxIdx = (idx + lightboxTriggers.length) % lightboxTriggers.length;
     const trigger = lightboxTriggers[currentLightboxIdx];
     lightboxImg.src = trigger.src;
@@ -1066,12 +1136,14 @@
   const openPresskitFooter = document.getElementById("footer-presskit-btn");
   const closePresskit = document.getElementById("close-presskit");
   const copyBioBtn = document.getElementById("btn-copy-press-bio");
+  registerModalFocusRestore(presskitModal);
 
-  function openPresskitModal() {
+  function openPresskitModal(triggerEl) {
+    lastModalTrigger = triggerEl instanceof HTMLElement ? triggerEl : document.activeElement;
     presskitModal?.showModal();
   }
-  openPresskitNav?.addEventListener("click", openPresskitModal);
-  openPresskitFooter?.addEventListener("click", openPresskitModal);
+  openPresskitNav?.addEventListener("click", () => openPresskitModal(openPresskitNav));
+  openPresskitFooter?.addEventListener("click", () => openPresskitModal(openPresskitFooter));
   closePresskit?.addEventListener("click", () => presskitModal?.close());
   presskitModal?.addEventListener("click", e => {
     if (e.target === presskitModal) presskitModal.close();
@@ -1105,8 +1177,10 @@ Contact: omraneelitdev@gmail.com`;
   const openContactBtn = document.getElementById("open-contact-btn");
   const closeContactBtn = document.getElementById("close-contact-modal");
   const copyEmailBtn = document.getElementById("btn-copy-email");
+  registerModalFocusRestore(contactModal);
 
   function openContactModal() {
+    lastModalTrigger = openContactBtn || document.activeElement;
     contactModal?.showModal();
   }
   function copyEmailToClipboard() {

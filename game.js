@@ -43,7 +43,20 @@
     wave_three: { title: "VETERAN PILOT", desc: "Reached Wave 3" },
     century_score: { title: "CENTURY CLUB", desc: "Scored 1,000 points" }
   };
-  let unlockedAchievements = JSON.parse(localStorage.getItem("scorpion_achievements") || "[]");
+
+  function loadAchievements() {
+    try {
+      const raw = localStorage.getItem("scorpion_achievements");
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+      if (typeof parsed === "object" && parsed !== null) {
+        return Object.keys(parsed).filter(k => parsed[k]);
+      }
+    } catch (_) {}
+    return [];
+  }
+  let unlockedAchievements = loadAchievements();
 
   function checkAchievement(id) {
     if (!unlockedAchievements.includes(id) && ACHIEVEMENTS[id]) {
@@ -53,30 +66,36 @@
       if (window.showStudioToast) {
         window.showStudioToast(`🏆 ACHIEVEMENT: ${ACHIEVEMENTS[id].title} — ${ACHIEVEMENTS[id].desc}`, "success");
       }
+      window.dispatchEvent(new CustomEvent("scorpion_achievements_updated", { detail: { id, unlocked: unlockedAchievements } }));
     }
   }
+
+  const DEFAULT_SCORES = [
+    { name: "SCO", score: 2450, wave: 4 },
+    { name: "ACE", score: 1820, wave: 3 },
+    { name: "VOID", score: 1240, wave: 3 },
+    { name: "OMR", score: 980, wave: 2 },
+    { name: "PIL", score: 650, wave: 2 }
+  ];
 
   function getLeaderboard() {
     try {
-      return JSON.parse(localStorage.getItem("scorpion_leaderboard")) || [
-        { initials: "OMR", score: 2500 },
-        { initials: "SCO", score: 1800 },
-        { initials: "ACE", score: 1200 },
-        { initials: "GOD", score: 800 },
-        { initials: "BOT", score: 400 }
-      ];
-    } catch {
-      return [{ initials: "OMR", score: 2500 }];
-    }
+      const stored = JSON.parse(localStorage.getItem("scorpion_scores") || "null");
+      if (Array.isArray(stored) && stored.length > 0) return stored;
+    } catch (_) {}
+    return [...DEFAULT_SCORES];
   }
 
-  function saveScoreToLeaderboard(scoreVal) {
-    if (scoreVal <= 0) return;
+  function saveScoreToLeaderboard(name, scoreVal, waveVal) {
+    if (scoreVal <= 0) return getLeaderboard();
+    const cleanName = (name || "PIL").trim().slice(0, 3).toUpperCase() || "PIL";
     const board = getLeaderboard();
-    const initials = (prompt("NEW HIGH SCORE! Enter 3-letter initials:", "PIL") || "PIL").slice(0, 3).toUpperCase();
-    board.push({ initials, score: scoreVal });
+    board.push({ name: cleanName, score: scoreVal, wave: waveVal });
     board.sort((a, b) => b.score - a.score);
-    localStorage.setItem("scorpion_leaderboard", JSON.stringify(board.slice(0, 5)));
+    const top5 = board.slice(0, 5);
+    localStorage.setItem("scorpion_scores", JSON.stringify(top5));
+    window.dispatchEvent(new CustomEvent("scorpion_scores_updated", { detail: { scores: top5 } }));
+    return top5;
   }
 
   const player = { x: W / 2, y: H - 64, vx: 0, invincible: 0 };
@@ -182,9 +201,38 @@
     updateHud();
   }
 
+  const highscoreWrap = document.getElementById("game-highscore-wrap");
+  const callsignInput = document.getElementById("game-callsign-input");
+  const callsignSubmit = document.getElementById("game-callsign-submit");
+
+  function renderLeadersOverlay() {
+    const leaders = getLeaderboard().map((l, i) => `${i + 1}. ${l.name} ${String(l.score).padStart(6, "0")}`).join(" | ");
+    overlayCopy.innerHTML = `Final score: ${String(score).padStart(6, "0")} (Wave 0${wave})<br><span style="font-size:0.75rem; opacity:0.85;">Leaderboard: ${leaders}</span>`;
+  }
+
+  function handleCallsignSubmit() {
+    if (!highscoreWrap || highscoreWrap.hidden) return;
+    const name = (callsignInput?.value || "PIL").trim().slice(0, 3).toUpperCase() || "PIL";
+    saveScoreToLeaderboard(name, score, wave);
+    highscoreWrap.hidden = true;
+    renderLeadersOverlay();
+    if (window.showStudioToast) {
+      window.showStudioToast(`⭐ Callsign ${name} saved to Station Hall of Fame!`, "success");
+    }
+  }
+
+  callsignSubmit?.addEventListener("click", handleCallsignSubmit);
+  callsignInput?.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleCallsignSubmit();
+    }
+  });
+
   function startGame() {
     reset();
     playing = true;
+    if (highscoreWrap) highscoreWrap.hidden = true;
     const shareScoreBtn = document.getElementById("game-share-score");
     if (shareScoreBtn) shareScoreBtn.hidden = true;
     overlay.classList.add("is-hidden");
@@ -205,14 +253,20 @@
     updateHud();
 
     const board = getLeaderboard();
-    const qualifies = board.length < 5 || score > board[board.length - 1].score;
-    if (qualifies && score > 0) {
-      setTimeout(() => saveScoreToLeaderboard(score), 300);
+    const qualifies = (board.length < 5 || score > board[board.length - 1].score) && score > 0;
+    if (qualifies && highscoreWrap) {
+      highscoreWrap.hidden = false;
+      if (callsignInput) {
+        callsignInput.value = "";
+        setTimeout(() => callsignInput.focus(), 150);
+      }
+    } else if (highscoreWrap) {
+      highscoreWrap.hidden = true;
     }
-    const leaders = getLeaderboard().map((l, i) => `${i + 1}. ${l.initials} ${String(l.score).padStart(6, "0")}`).join(" | ");
+
+    renderLeadersOverlay();
 
     overlayTitle.textContent = "SIGNAL LOST";
-    overlayCopy.innerHTML = `Final score: ${String(score).padStart(6, "0")}<br><span style="font-size:0.75rem; opacity:0.85;">Leaderboard: ${leaders}</span>`;
     startButton.innerHTML = "RETRY MISSION <span>↻</span>";
     const shareScoreBtn = document.getElementById("game-share-score");
     if (shareScoreBtn) shareScoreBtn.hidden = false;
@@ -674,7 +728,7 @@
   const hallShareBtn = document.getElementById("btn-share-hall");
   hallShareBtn?.addEventListener("click", async () => {
     const board = getLeaderboard();
-    const topScore = board[0] ? `${board[0].initials} (${board[0].score} pts)` : "N/A";
+    const topScore = board[0] ? `${board[0].name || board[0].initials} (${board[0].score} pts)` : "N/A";
     const text = `🏆 Station Hall of Fame Record: ${topScore} on Scorpion Strike! Try to beat it at Omrano The Scorpion Dev:`;
     const url = window.location.origin + window.location.pathname + "#arcade";
     if (navigator.share) {

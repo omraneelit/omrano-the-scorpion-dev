@@ -8,6 +8,7 @@
   <meta property="og:title" content="Omrano The Scorpion Dev — Independent Game &amp; App Developer">
   <meta property="og:description" content="Explore playable games, original worlds, and Shadow Engine development by Omrano The Scorpion Dev.">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Omrano The Scorpion Dev">
   <meta property="og:url" content="https://omraneelit.github.io/omrano-the-scorpion-dev/">
   <meta property="og:image" content="https://omraneelit.github.io/omrano-the-scorpion-dev/assets/brand/og-cover.png">
   <meta property="og:image:width" content="1200">
@@ -263,6 +264,13 @@
               <div class="game-overlay" id="game-overlay">
                 <p class="game-kicker">OMRANO ARCADE // 01</p><h3 id="game-overlay-title">SCORPION STRIKE</h3>
                 <p id="game-overlay-copy">Clear the swarm. Protect the signal.<br>Three lives. No retreat.</p>
+                <div class="game-overlay-highscore" id="game-highscore-wrap" hidden>
+                  <p>★ NEW HIGH SCORE RECORD ★</p>
+                  <div class="callsign-row">
+                    <input type="text" id="game-callsign-input" class="callsign-input" maxlength="3" placeholder="PIL" aria-label="Enter 3-letter Callsign">
+                    <button type="button" id="game-callsign-submit" class="callsign-btn">SAVE SCORE</button>
+                  </div>
+                </div>
                 <div class="game-overlay-actions">
                   <button class="game-start" id="game-start" type="button">START MISSION <span>→</span></button>
                   <button class="game-share-score" id="game-share-score" type="button" hidden>SHARE SCORE <span>🔗</span></button>
@@ -489,6 +497,11 @@
           <strong class="radio-title" id="radio-track-title">Track 01: Neon Grid</strong>
           <span class="radio-genre" id="radio-track-genre">Synthwave / Outrun (116 BPM)</span>
         </div>
+        <select id="radio-track-select" class="radio-track-select" aria-label="Choose soundtrack track">
+          <option value="0">01: Neon Grid</option>
+          <option value="1">02: Deep Orbit</option>
+          <option value="2">03: Void Cyberpunk</option>
+        </select>
         <div class="radio-progress-bar" id="radio-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" title="Seek track">
           <div class="radio-progress-fill" id="radio-progress-fill"></div>
         </div>
@@ -511,7 +524,7 @@
     <div class="cmd-palette-box">
       <div class="cmd-palette-search">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M10 18a7.952 7.952 0 0 0 4.897-1.688l4.396 4.396 1.414-1.414-4.396-4.396A7.952 7.952 0 0 0 18 10c0-4.411-3.589-8-8-8s-8 3.589-8 8 3.589 8 8 8zm0-14c3.309 0 6 2.691 6 6s-2.691 6-6 6-6-2.691-6-6 2.691-6 6-6z"/></svg>
-        <input type="search" id="cmd-input" placeholder="Type a command, action, or game title..." autocomplete="off" spellcheck="false" aria-label="Command palette search">
+        <input type="search" id="cmd-input" role="combobox" aria-expanded="true" aria-autocomplete="list" aria-controls="cmd-results" placeholder="Type a command, action, or game title..." autocomplete="off" spellcheck="false" aria-label="Command palette search">
         <kbd>ESC</kbd>
       </div>
       <div class="cmd-palette-results" id="cmd-results" role="listbox"></div>

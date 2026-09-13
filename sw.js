@@ -1,13 +1,23 @@
-const CACHE_NAME = "omrano-studio-v2";
+const CACHE_NAME = "omrano-studio-v3";
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./site.js",
   "./game.js",
+  "./manifest.json",
   "./favicon.svg",
   "./feed.xml",
   "./privacy.html",
+  "./data/game-updates.json",
+  "./assets/brand/og-cover.png",
+  "./assets/brand/apple-touch-icon.png",
+  "./assets/games/lineburst.webp",
+  "./assets/games/paws-and-platters-card.webp",
+  "./assets/games/turf-bag-alley-mafia-card.webp",
+  "./assets/games/zero-hour-protocol.webp",
+  "./assets/games/cowdude-open-world.webp",
+  "./assets/games/heir-of-the-wilds-card.webp",
   "./projects/shadow-engine.html",
   "./games/cowdude-open-world.html",
   "./games/heir-of-the-wilds.html",
@@ -35,12 +45,15 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
+  const url = new URL(event.request.url);
+  if (!url.protocol.startsWith("http")) return;
+
   event.respondWith(
     fetch(event.request)
       .then(networkResponse => {
-        if (networkResponse && networkResponse.status === 200) {
+        if (networkResponse && networkResponse.status === 200 && (networkResponse.type === "basic" || url.origin === location.origin)) {
           const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone)).catch(() => {});
         }
         return networkResponse;
       })
