@@ -123,7 +123,17 @@ button { font:inherit; }
 .pixel-a { width:47px; height:47px; top:42px; left:36px; font-size:1.4rem; }
 .pixel-b { width:55px; height:55px; right:39px; bottom:44px; }
 .pixel-c { width:40px; height:40px; top:75px; right:48px; font-size:1.3rem; }
-@keyframes float { 50% { transform:translateY(-11px) rotate(3deg); } }
+/* Layout & Rendering Containment for Core Web Vitals */
+.announcements-section,
+.project-grid,
+.arcade-section,
+.tools-section,
+.about-section,
+.contact-section,
+.engine-sandbox-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 650px;
+}
 
 /* Announcements */
 .announcements-section { padding:86px 0 92px; border-top:1px solid var(--line); background:linear-gradient(180deg,rgba(54,224,165,.035),transparent 60%); position:relative; }

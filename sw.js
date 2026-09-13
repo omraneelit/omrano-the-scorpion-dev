@@ -1,4 +1,4 @@
-const CACHE_NAME = "omrano-studio-v3";
+const CACHE_NAME = "omrano-studio-v4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -48,15 +48,36 @@ self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
   if (!url.protocol.startsWith("http")) return;
 
+  // Navigation (HTML document requests): Network-First, fallback to Cache
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then(networkResponse => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone)).catch(() => {});
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request).then(cached => cached || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  // Static assets: Stale-While-Revalidate (instant response from cache, background refresh)
   event.respondWith(
-    fetch(event.request)
-      .then(networkResponse => {
-        if (networkResponse && networkResponse.status === 200 && (networkResponse.type === "basic" || url.origin === location.origin)) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone)).catch(() => {});
-        }
-        return networkResponse;
-      })
-      .catch(() => caches.match(event.request))
+    caches.match(event.request).then(cachedResponse => {
+      const fetchPromise = fetch(event.request)
+        .then(networkResponse => {
+          if (networkResponse && networkResponse.status === 200 && (networkResponse.type === "basic" || url.origin === location.origin)) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone)).catch(() => {});
+          }
+          return networkResponse;
+        })
+        .catch(() => null);
+
+      return cachedResponse || fetchPromise;
+    })
   );
 });

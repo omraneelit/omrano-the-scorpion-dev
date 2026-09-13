@@ -475,6 +475,30 @@
     });
   });
 
+  // Dynamic Arcade Engine Loader (Performance Lazy-Load)
+  let arcadeScriptLoaded = false;
+  function loadArcadeGameScript() {
+    if (arcadeScriptLoaded) return;
+    arcadeScriptLoaded = true;
+    const script = document.createElement("script");
+    script.src = "game.js";
+    script.defer = true;
+    document.body.appendChild(script);
+  }
+
+  const arcadeSection = document.getElementById("arcade");
+  if (arcadeSection && "IntersectionObserver" in window) {
+    const arcadeObserver = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        loadArcadeGameScript();
+        arcadeObserver.disconnect();
+      }
+    }, { rootMargin: "300px" });
+    arcadeObserver.observe(arcadeSection);
+  } else if (arcadeSection) {
+    loadArcadeGameScript();
+  }
+
   // 6. Arcade Subnav, Achievements & Leaderboard
   const btnArcadePlay = document.getElementById("btn-arcade-play");
   const btnArcadeAchieve = document.getElementById("btn-arcade-achievements");
